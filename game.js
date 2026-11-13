@@ -11,95 +11,185 @@ class SaeAmbientFX {
     this.tokens = ['0°', 'π/2', 'f(x)', '№10', 'Δθ', 'XI', '99%', 'cos θ', '∂y/∂x', '∞'];
     this.particles = [];
     this.rafId = null;
-    this.reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.dpr = 1;
+    this.reducedMotion = Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    this.mouse = { x: window.innerWidth * 0.65, y: window.innerHeight * 0.35, active: false };
 
-    if (this.canvas && this.ctx) {
-      this.resize();
-      window.addEventListener('resize', () => this.resize());
-      this.seed();
-      if (!this.reducedMotion) {
-        this.loop();
-      } else {
-        this.drawFrame(0);
+    if (!this.canvas || !this.ctx || this.reducedMotion) return;
+
+    this.resize();
+    this.seed();
+
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        this.resize();
+        this.seed();
+      }, 120);
+    }, { passive: true });
+
+    window.addEventListener('pointermove', (e) => {
+      if (e.pointerType === 'mouse') {
+        this.mouse.x = e.clientX;
+        this.mouse.y = e.clientY;
+        this.mouse.active = true;
       }
-    }
+    }, { passive: true });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && this.rafId) {
+        cancelAnimationFrame(this.rafId);
+        this.rafId = null;
+      } else if (!document.hidden && !this.rafId && !this.reducedMotion) {
+        this.loop();
+      }
+    });
+
+    this.loop();
   }
 
   resize() {
-    if (!this.canvas) return;
-    this.w = this.canvas.width = window.innerWidth;
-    this.h = this.canvas.height = window.innerHeight;
+    if (!this.canvas || !this.ctx) return;
+    this.dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    this.w = window.innerWidth;
+    this.h = window.innerHeight;
+    this.canvas.width = Math.floor(this.w * this.dpr);
+    this.canvas.height = Math.floor(this.h * this.dpr);
+    this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
   }
 
   seed() {
-    const count = Math.min(34, Math.max(16, Math.floor((window.innerWidth * window.innerHeight) / 48000)));
-    this.particles = [];
-    for (let i = 0; i < count; i++) {
-      this.particles.push({
-        x: Math.random() * (this.w || 1200),
-        y: Math.random() * (this.h || 800),
-        vx: (Math.random() - 0.5) * 0.42,
-        vy: -0.15 - Math.random() * 0.35,
-        r: 1.5 + Math.random() * 2.2,
-        token: i % 2 === 0 ? this.tokens[i % this.tokens.length] : null,
-        alpha: 0.16 + Math.random() * 0.32,
-        phase: Math.random() * Math.PI * 2
-      });
-    }
+    const count = this.w < 760 ? 18 : 30;
+    this.particles = Array.from({ length: count }, (_, i) => ({
+      x: Math.random() * (this.w || 1200),
+      y: Math.random() * (this.h || 800),
+      vx: (Math.random() - 0.5) * 0.38,
+      vy: -0.16 - Math.random() * 0.36,
+      r: 1.2 + Math.random() * 2.0,
+      token: i % 3 === 0 ? this.tokens[i % this.tokens.length] : null,
+      alpha: 0.16 + Math.random() * 0.36,
+      phase: Math.random() * Math.PI * 2
+    }));
   }
 
   setFlowMode(active) {
     this.flowMode = Boolean(active);
-    if (this.reducedMotion) this.drawFrame(0);
+  }
+
+  drawFieldLines(ctx, isFlow) {
+    // Thin Metavision tactical field lines & pitch arcs reacting slightly to cursor
+    const lineRgb = isFlow ? '255, 42, 95' : '0, 229, 195';
+    const goldRgb = '234, 179, 8';
+    const shiftX = this.mouse.active ? ((this.mouse.x / Math.max(1, this.w)) - 0.5) * 18 : 0;
+    const shiftY = this.mouse.active ? ((this.mouse.y / Math.max(1, this.h)) - 0.5) * 14 : 0;
+
+    ctx.save();
+    ctx.strokeStyle = `rgba(${lineRgb}, ${isFlow ? 0.075 : 0.05})`;
+    ctx.lineWidth = 0.85;
+
+    // Pitch center line & circle
+    const midY = this.h * 0.5 + shiftY * 0.4;
+    ctx.beginPath();
+    ctx.moveTo(0, midY);
+    ctx.lineTo(this.w, midY);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(this.w * 0.5 + shiftX, midY, Math.min(this.w, this.h) * 0.19, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Fine diagonal Metavision calculation vector
+    ctx.strokeStyle = `rgba(${goldRgb}, ${isFlow ? 0.06 : 0.038})`;
+    ctx.setLineDash([6, 10]);
+    ctx.beginPath();
+    ctx.moveTo(0, this.h * 0.82 - shiftY * 0.6);
+    ctx.lineTo(this.w, this.h * 0.18 + shiftY * 0.6);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
   }
 
   drawFrame(t) {
     if (!this.ctx) return;
     const ctx = this.ctx;
+    const isFlow = this.flowMode || document.body.classList.contains('flow-mode-active');
     ctx.clearRect(0, 0, this.w, this.h);
 
-    const primaryRgb = this.flowMode ? '255, 42, 95' : '225, 29, 72';
-    const secondaryRgb = this.flowMode ? '0, 229, 195' : '234, 179, 8';
+    this.drawFieldLines(ctx, isFlow);
+
+    const primaryRgb = isFlow ? '255, 42, 95' : '225, 29, 72';
+    const secondaryRgb = isFlow ? '0, 229, 195' : '234, 179, 8';
+    const metavisionRgb = isFlow ? '255, 42, 95' : '0, 229, 195';
 
     for (let i = 0; i < this.particles.length; i++) {
       const p = this.particles[i];
-      if (!this.reducedMotion) {
-        p.x += p.vx * (this.flowMode ? 1.65 : 1);
-        p.y += p.vy * (this.flowMode ? 1.65 : 1);
-        if (p.y < -30) { p.y = this.h + 20; p.x = Math.random() * this.w; }
-        if (p.x < -30) p.x = this.w + 20;
-        if (p.x > this.w + 30) p.x = -20;
+      p.phase += isFlow ? 0.022 : 0.015;
+      p.x += p.vx * (isFlow ? 1.45 : 1) + Math.sin(p.phase) * 0.16;
+      p.y += p.vy * (isFlow ? 1.45 : 1);
+
+      if (p.y < -20) {
+        p.y = this.h + 20;
+        p.x = Math.random() * this.w;
+      }
+      if (p.x < -20) p.x = this.w + 20;
+      if (p.x > this.w + 20) p.x = -20;
+
+      // Metavision geometric trajectory links to cursor node
+      if (this.mouse.active) {
+        const dx = this.mouse.x - p.x;
+        const dy = this.mouse.y - p.y;
+        const distSq = dx * dx + dy * dy;
+        if (distSq < 28900) {
+          const dist = Math.sqrt(distSq);
+          const op = (1 - dist / 170) * (isFlow ? 0.3 : 0.22);
+          ctx.strokeStyle = `rgba(${metavisionRgb}, ${op})`;
+          ctx.lineWidth = isFlow ? 1.05 : 0.85;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(this.mouse.x, this.mouse.y);
+          ctx.stroke();
+        }
       }
 
-      const pulse = 0.75 + 0.25 * Math.sin(t * 0.002 + p.phase);
-      const a = p.alpha * pulse * (this.flowMode ? 1.35 : 0.9);
-
-      if (p.token) {
-        ctx.font = '700 11px "Exo 2", sans-serif';
-        ctx.fillStyle = `rgba(${i % 3 === 0 ? primaryRgb : secondaryRgb}, ${Math.min(0.62, a)})`;
-        ctx.fillText(p.token, p.x, p.y);
-      } else {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${secondaryRgb}, ${Math.min(0.55, a)})`;
-        ctx.fill();
-      }
-
+      // Geometric trajectory chords between nearby particles
       for (let j = i + 1; j < this.particles.length; j++) {
         const q = this.particles[j];
         const dx = p.x - q.x;
         const dy = p.y - q.y;
         const distSq = dx * dx + dy * dy;
-        if (distSq < 21000) {
-          const lineA = (1 - distSq / 21000) * (this.flowMode ? 0.16 : 0.08);
-          ctx.strokeStyle = `rgba(${primaryRgb}, ${lineA})`;
-          ctx.lineWidth = 1;
+        if (distSq < 18225) {
+          const lineA = (1 - Math.sqrt(distSq) / 135) * (isFlow ? 0.14 : 0.085);
+          ctx.strokeStyle = `rgba(${i % 2 === 0 ? primaryRgb : secondaryRgb}, ${lineA})`;
+          ctx.lineWidth = 0.75;
           ctx.beginPath();
           ctx.moveTo(p.x, p.y);
           ctx.lineTo(q.x, q.y);
           ctx.stroke();
         }
       }
+
+      const pulse = 0.75 + 0.25 * Math.sin(t * 0.002 + p.phase);
+      const a = Math.min(0.68, p.alpha * pulse * (isFlow ? 1.3 : 0.95));
+
+      if (p.token) {
+        ctx.font = '700 11px "Exo 2", sans-serif';
+        ctx.fillStyle = `rgba(${i % 3 === 0 ? primaryRgb : secondaryRgb}, ${a})`;
+        ctx.fillText(p.token, p.x, p.y);
+      } else {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${secondaryRgb}, ${a})`;
+        ctx.fill();
+      }
+    }
+
+    if (this.mouse.active) {
+      ctx.beginPath();
+      ctx.arc(this.mouse.x, this.mouse.y, 16, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(${metavisionRgb}, 0.22)`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
     }
   }
 

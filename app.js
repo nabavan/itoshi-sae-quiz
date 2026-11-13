@@ -325,6 +325,7 @@ class SaeCallController {
 
   setEmotion(emotionKey) {
     const safeKey = SAE_CALL_EMOTIONS[emotionKey] ? emotionKey : 'neutral';
+    const emotionChanged = this.currentEmotion !== safeKey;
     this.currentEmotion = safeKey;
     const meta = SAE_CALL_EMOTIONS[safeKey];
 
@@ -340,6 +341,16 @@ class SaeCallController {
       nextImg.classList.add('is-visible');
       prevImg.classList.remove('is-visible');
       this.activeLayer = showA ? 'A' : 'B';
+    }
+
+    if (emotionChanged && this.elStage) {
+      clearTimeout(this._emotionPulseTimer);
+      this.elStage.classList.remove('is-emotion-pulse');
+      void this.elStage.offsetWidth;
+      this.elStage.classList.add('is-emotion-pulse');
+      this._emotionPulseTimer = setTimeout(() => {
+        this.elStage?.classList.remove('is-emotion-pulse');
+      }, 420);
     }
   }
 
@@ -358,7 +369,10 @@ class SaeCallController {
     clearInterval(this.typingTimer);
     this.fullReplyText = text;
     if (this.elSourceTag) this.elSourceTag.textContent = sourceLabel;
-    if (this.elDialogue) this.elDialogue.textContent = '';
+    if (this.elDialogue) {
+      this.elDialogue.textContent = '';
+      this.elDialogue.classList.add('is-typing');
+    }
     this.elWave?.classList.add('is-speaking');
     this.elTyping?.classList.add('is-active');
     if (this.elSkip) this.elSkip.hidden = false;
@@ -377,7 +391,10 @@ class SaeCallController {
   finishTypingNow() {
     clearInterval(this.typingTimer);
     this.typingTimer = null;
-    if (this.elDialogue) this.elDialogue.textContent = this.fullReplyText;
+    if (this.elDialogue) {
+      this.elDialogue.textContent = this.fullReplyText;
+      this.elDialogue.classList.remove('is-typing');
+    }
     this.elWave?.classList.remove('is-speaking');
     this.elTyping?.classList.remove('is-active');
     if (this.elSkip) this.elSkip.hidden = true;
@@ -778,22 +795,72 @@ document.addEventListener('DOMContentLoaded', () => {
     if (on) sfx.playClick();
   });
 
-  // Scroll Reveal Observer
+  // Multi-Level Scroll Reveal System (analog of RinAmbientFX/refreshScrollReveals)
+  document.documentElement.classList.add('js-reveal-ready');
+  const reduceMotionQuery = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  const autoRevealRules = [
+    { selector: '#heroSection .hero-pillar-card', anim: 'reveal-scale-up', stagger: 2 },
+    { selector: '#heroSection .hero-cat-card', anim: 'reveal-on-scroll', alternateLR: true, stagger: 4 },
+    { selector: '#heroSection .hero-activity-card', anim: 'reveal-on-scroll', alternateLR: true, stagger: 2 },
+    { selector: '#dossierSection .dossier-grid > *', anim: 'reveal-on-scroll', alternateLR: true, stagger: 3 },
+    { selector: '#timelineSection .timeline-item', anim: 'reveal-on-scroll', alternateLR: true, stagger: 3 },
+    { selector: '#weaponsSection .weapon-card', anim: 'reveal-scale-up', stagger: 3 },
+    { selector: '#weaponsSection #weaponDetailPanel', anim: 'reveal-scale-up', delay: 2 },
+    { selector: '#gallerySection .gallery-card', anim: 'reveal-scale-up', stagger: 3 },
+    { selector: '#callSection .call-terminal-shell', anim: 'reveal-scale-up', delay: 1 },
+    { selector: '#gameSection .duel-arena-shell', anim: 'reveal-scale-up', delay: 1 },
+    { selector: '#quizContainerSection .quiz-box', anim: 'reveal-scale-up', delay: 1 },
+    { selector: '.site-footer', anim: 'reveal-scale-up', delay: 1 }
+  ];
+
+  function applyAutoRevealClasses(scopeEl = document) {
+    autoRevealRules.forEach((rule) => {
+      const nodes = scopeEl.querySelectorAll(rule.selector);
+      nodes.forEach((el, idx) => {
+        if (!el.classList.contains('reveal-on-scroll')) {
+          el.classList.add('reveal-on-scroll');
+          if (rule.alternateLR) {
+            el.classList.add(idx % 2 === 0 ? 'reveal-from-left' : 'reveal-from-right');
+          } else if (rule.anim && rule.anim !== 'reveal-on-scroll') {
+            el.classList.add(rule.anim);
+          }
+          const delayStep = rule.delay || (rule.stagger ? (idx % rule.stagger) + 1 : 0);
+          if (delayStep >= 1 && delayStep <= 4) {
+            el.classList.add(`reveal-delay-${delayStep}`);
+          }
+        }
+      });
+    });
+  }
+
   const revealObserver = 'IntersectionObserver' in window
     ? new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) entry.target.classList.add('is-visible');
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+          }
         });
-      }, { threshold: 0.12 })
+      }, { threshold: 0.08, rootMargin: '0px 0px -36px 0px' })
     : null;
 
-  function refreshReveals(root) {
-    if (!root) return;
+  function refreshScrollReveals(scopeEl = document) {
+    applyAutoRevealClasses(document);
+    const root = scopeEl || document;
+    const vh = window.innerHeight || document.documentElement.clientHeight || 900;
+    const skipMotion = reduceMotionQuery && reduceMotionQuery.matches;
+
     root.querySelectorAll('.reveal-on-scroll').forEach((el) => {
-      if (revealObserver) revealObserver.observe(el);
-      const rect = el.getBoundingClientRect();
-      if (rect.top < window.innerHeight * 0.96) {
+      if (skipMotion || !revealObserver) {
         el.classList.add('is-visible');
+        return;
+      }
+      revealObserver.observe(el);
+      const rect = el.getBoundingClientRect();
+      if (rect.top < vh * 0.92 && rect.bottom > 0) {
+        el.classList.add('is-visible');
+      } else if (rect.top >= vh * 0.92) {
+        el.classList.remove('is-visible');
       }
     });
   }
@@ -875,7 +942,10 @@ document.addEventListener('DOMContentLoaded', () => {
     navLinks.forEach((btn) => btn.classList.toggle('active', btn.getAttribute('data-target') === targetId));
     window.scrollTo({ top: 0, behavior: 'auto' });
     const activeEl = document.getElementById(targetId);
-    refreshReveals(activeEl);
+    requestAnimationFrame(() => {
+      refreshScrollReveals(activeEl || document);
+      refreshScrollReveals(document.querySelector('.site-footer'));
+    });
     if (targetId === 'dossierSection') {
       drawSaeRadar();
       animateDossierBars();
@@ -914,10 +984,13 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderTimeline(filter = 'all') {
     if (!timelineContainer) return;
     timelineContainer.textContent = '';
+    let renderedIdx = 0;
     SAE_TIMELINE_MILESTONES.forEach((m) => {
       if (filter !== 'all' && m.cat !== filter) return;
       const item = document.createElement('div');
-      item.className = 'timeline-item reveal-on-scroll is-visible';
+      const dirClass = renderedIdx % 2 === 0 ? 'reveal-from-left' : 'reveal-from-right';
+      const delayClass = `reveal-delay-${(renderedIdx % 3) + 1}`;
+      item.className = `timeline-item reveal-on-scroll ${dirClass} ${delayClass}`;
       item.innerHTML = `
         <div class="timeline-dot"></div>
         <div class="timeline-header-meta">
@@ -931,7 +1004,9 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
       timelineContainer.appendChild(item);
+      renderedIdx += 1;
     });
+    refreshScrollReveals(timelineContainer);
   }
 
   document.querySelectorAll('.t-filter-btn').forEach((btn) => {
@@ -951,10 +1026,12 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderGallery(filter = 'all') {
     if (!galleryGrid) return;
     galleryGrid.textContent = '';
+    let renderedIdx = 0;
     SAE_GALLERY_MOMENTS.forEach((m, idx) => {
       if (filter !== 'all' && m.cat !== filter) return;
       const card = document.createElement('article');
-      card.className = 'gallery-card reveal-on-scroll is-visible';
+      const delayClass = `reveal-delay-${(renderedIdx % 3) + 1}`;
+      card.className = `gallery-card reveal-on-scroll reveal-scale-up ${delayClass}`;
       card.setAttribute('tabindex', '0');
       card.innerHTML = `
         <div class="card-media-box">
@@ -975,7 +1052,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openMomentModal(idx); }
       });
       galleryGrid.appendChild(card);
+      renderedIdx += 1;
     });
+    refreshScrollReveals(galleryGrid);
   }
 
   document.querySelectorAll('.g-filter-btn').forEach((btn) => {
@@ -991,8 +1070,14 @@ document.addEventListener('DOMContentLoaded', () => {
     activeMomentIdx = (idx + SAE_GALLERY_MOMENTS.length) % SAE_GALLERY_MOMENTS.length;
     const m = SAE_GALLERY_MOMENTS[activeMomentIdx];
     if (!m) return;
-    document.getElementById('modalImg').src = m.img;
-    document.getElementById('modalImg').alt = m.title;
+    const modalImg = document.getElementById('modalImg');
+    if (modalImg) {
+      modalImg.classList.remove('moment-switch-anim');
+      void modalImg.offsetWidth;
+      modalImg.src = m.img;
+      modalImg.alt = m.title;
+      modalImg.classList.add('moment-switch-anim');
+    }
     document.getElementById('modalBadge').textContent = m.badge;
     document.getElementById('modalCanonTag').textContent = m.canon;
     document.getElementById('modalEgoBadge').textContent = m.egoBadge;
@@ -1070,6 +1155,11 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     `).join('');
 
+    weaponDetailPanel.classList.toggle('flow-theme', id === 'flow');
+    weaponDetailPanel.style.animation = 'none';
+    void weaponDetailPanel.offsetWidth;
+    weaponDetailPanel.style.animation = 'weaponDetailReveal 0.48s cubic-bezier(0.16, 1, 0.3, 1) both';
+
     weaponDetailPanel.innerHTML = `
       <div class="weapon-detail-meta-bar">
         <span class="weapon-detail-hud-badge">${escapeHtml(d.hudBadge)}</span>
@@ -1110,5 +1200,5 @@ document.addEventListener('DOMContentLoaded', () => {
   renderTimeline('all');
   renderGallery('all');
   renderWeaponDetail('counter');
-  refreshReveals(document.getElementById('heroSection'));
+  refreshScrollReveals(document);
 });
