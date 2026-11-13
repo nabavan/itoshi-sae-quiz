@@ -13,7 +13,7 @@ class SaeAmbientFX {
     this.rafId = null;
     this.dpr = 1;
     this.reducedMotion = Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-    this.mouse = { x: window.innerWidth * 0.65, y: window.innerHeight * 0.35, active: false };
+    this.mouse = { x: window.innerWidth * 0.65, y: window.innerHeight * 0.35, active: true, movedAt: 0 };
 
     if (!this.canvas || !this.ctx || this.reducedMotion) return;
 
@@ -30,10 +30,11 @@ class SaeAmbientFX {
     }, { passive: true });
 
     window.addEventListener('pointermove', (e) => {
-      if (e.pointerType === 'mouse') {
+      if (e.pointerType === 'mouse' || e.pointerType === 'pen') {
         this.mouse.x = e.clientX;
         this.mouse.y = e.clientY;
         this.mouse.active = true;
+        this.mouse.movedAt = performance.now();
       }
     }, { passive: true });
 
@@ -60,15 +61,15 @@ class SaeAmbientFX {
   }
 
   seed() {
-    const count = this.w < 760 ? 18 : 30;
+    const count = this.w < 760 ? 24 : 46;
     this.particles = Array.from({ length: count }, (_, i) => ({
       x: Math.random() * (this.w || 1200),
       y: Math.random() * (this.h || 800),
-      vx: (Math.random() - 0.5) * 0.38,
-      vy: -0.16 - Math.random() * 0.36,
-      r: 1.2 + Math.random() * 2.0,
+      vx: (Math.random() - 0.5) * 0.45,
+      vy: -0.22 - Math.random() * 0.42,
+      r: 1.8 + Math.random() * 2.4,
       token: i % 3 === 0 ? this.tokens[i % this.tokens.length] : null,
-      alpha: 0.16 + Math.random() * 0.36,
+      alpha: 0.34 + Math.random() * 0.38,
       phase: Math.random() * Math.PI * 2
     }));
   }
@@ -78,33 +79,37 @@ class SaeAmbientFX {
   }
 
   drawFieldLines(ctx, isFlow) {
-    // Thin Metavision tactical field lines & pitch arcs reacting slightly to cursor
+    // Thin Metavision tactical field lines & pitch arcs reacting to cursor
     const lineRgb = isFlow ? '255, 42, 95' : '0, 229, 195';
     const goldRgb = '234, 179, 8';
-    const shiftX = this.mouse.active ? ((this.mouse.x / Math.max(1, this.w)) - 0.5) * 18 : 0;
-    const shiftY = this.mouse.active ? ((this.mouse.y / Math.max(1, this.h)) - 0.5) * 14 : 0;
+    const shiftX = this.mouse.active ? ((this.mouse.x / Math.max(1, this.w)) - 0.5) * 24 : 0;
+    const shiftY = this.mouse.active ? ((this.mouse.y / Math.max(1, this.h)) - 0.5) * 18 : 0;
 
     ctx.save();
-    ctx.strokeStyle = `rgba(${lineRgb}, ${isFlow ? 0.075 : 0.05})`;
-    ctx.lineWidth = 0.85;
+    ctx.strokeStyle = `rgba(${lineRgb}, ${isFlow ? 0.14 : 0.095})`;
+    ctx.lineWidth = 1;
 
     // Pitch center line & circle
-    const midY = this.h * 0.5 + shiftY * 0.4;
+    const midY = this.h * 0.5 + shiftY * 0.45;
     ctx.beginPath();
     ctx.moveTo(0, midY);
     ctx.lineTo(this.w, midY);
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.arc(this.w * 0.5 + shiftX, midY, Math.min(this.w, this.h) * 0.19, 0, Math.PI * 2);
+    ctx.arc(this.w * 0.5 + shiftX, midY, Math.min(this.w, this.h) * 0.21, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Fine diagonal Metavision calculation vector
-    ctx.strokeStyle = `rgba(${goldRgb}, ${isFlow ? 0.06 : 0.038})`;
-    ctx.setLineDash([6, 10]);
+    // Fine diagonal Metavision calculation vectors
+    ctx.strokeStyle = `rgba(${goldRgb}, ${isFlow ? 0.11 : 0.075})`;
+    ctx.setLineDash([7, 10]);
     ctx.beginPath();
-    ctx.moveTo(0, this.h * 0.82 - shiftY * 0.6);
-    ctx.lineTo(this.w, this.h * 0.18 + shiftY * 0.6);
+    ctx.moveTo(0, this.h * 0.84 - shiftY * 0.7);
+    ctx.lineTo(this.w, this.h * 0.16 + shiftY * 0.7);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, this.h * 0.22 + shiftY * 0.5);
+    ctx.lineTo(this.w, this.h * 0.78 - shiftY * 0.5);
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.restore();
@@ -116,6 +121,12 @@ class SaeAmbientFX {
     const isFlow = this.flowMode || document.body.classList.contains('flow-mode-active');
     ctx.clearRect(0, 0, this.w, this.h);
 
+    // Gentle autonomous Metavision focal sweep before user moves mouse
+    if (this.mouse.movedAt === 0) {
+      this.mouse.x = this.w * (0.58 + Math.cos(t * 0.00045) * 0.18);
+      this.mouse.y = this.h * (0.42 + Math.sin(t * 0.0006) * 0.16);
+    }
+
     this.drawFieldLines(ctx, isFlow);
 
     const primaryRgb = isFlow ? '255, 42, 95' : '225, 29, 72';
@@ -124,8 +135,8 @@ class SaeAmbientFX {
 
     for (let i = 0; i < this.particles.length; i++) {
       const p = this.particles[i];
-      p.phase += isFlow ? 0.022 : 0.015;
-      p.x += p.vx * (isFlow ? 1.45 : 1) + Math.sin(p.phase) * 0.16;
+      p.phase += isFlow ? 0.024 : 0.016;
+      p.x += p.vx * (isFlow ? 1.45 : 1) + Math.sin(p.phase) * 0.22;
       p.y += p.vy * (isFlow ? 1.45 : 1);
 
       if (p.y < -20) {
@@ -140,11 +151,11 @@ class SaeAmbientFX {
         const dx = this.mouse.x - p.x;
         const dy = this.mouse.y - p.y;
         const distSq = dx * dx + dy * dy;
-        if (distSq < 28900) {
+        if (distSq < 44100) {
           const dist = Math.sqrt(distSq);
-          const op = (1 - dist / 170) * (isFlow ? 0.3 : 0.22);
+          const op = (1 - dist / 210) * (isFlow ? 0.42 : 0.32);
           ctx.strokeStyle = `rgba(${metavisionRgb}, ${op})`;
-          ctx.lineWidth = isFlow ? 1.05 : 0.85;
+          ctx.lineWidth = isFlow ? 1.2 : 0.95;
           ctx.beginPath();
           ctx.moveTo(p.x, p.y);
           ctx.lineTo(this.mouse.x, this.mouse.y);
@@ -158,10 +169,10 @@ class SaeAmbientFX {
         const dx = p.x - q.x;
         const dy = p.y - q.y;
         const distSq = dx * dx + dy * dy;
-        if (distSq < 18225) {
-          const lineA = (1 - Math.sqrt(distSq) / 135) * (isFlow ? 0.14 : 0.085);
+        if (distSq < 30625) {
+          const lineA = (1 - Math.sqrt(distSq) / 175) * (isFlow ? 0.22 : 0.14);
           ctx.strokeStyle = `rgba(${i % 2 === 0 ? primaryRgb : secondaryRgb}, ${lineA})`;
-          ctx.lineWidth = 0.75;
+          ctx.lineWidth = 0.85;
           ctx.beginPath();
           ctx.moveTo(p.x, p.y);
           ctx.lineTo(q.x, q.y);
@@ -169,26 +180,26 @@ class SaeAmbientFX {
         }
       }
 
-      const pulse = 0.75 + 0.25 * Math.sin(t * 0.002 + p.phase);
-      const a = Math.min(0.68, p.alpha * pulse * (isFlow ? 1.3 : 0.95));
+      const pulse = 0.78 + 0.22 * Math.sin(t * 0.0024 + p.phase);
+      const a = Math.min(0.84, p.alpha * pulse * (isFlow ? 1.3 : 1.08));
 
       if (p.token) {
-        ctx.font = '700 11px "Exo 2", sans-serif';
+        ctx.font = '700 12px "Exo 2", sans-serif';
         ctx.fillStyle = `rgba(${i % 3 === 0 ? primaryRgb : secondaryRgb}, ${a})`;
         ctx.fillText(p.token, p.x, p.y);
       } else {
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${secondaryRgb}, ${a})`;
+        ctx.fillStyle = `rgba(${i % 2 === 0 ? metavisionRgb : secondaryRgb}, ${a})`;
         ctx.fill();
       }
     }
 
     if (this.mouse.active) {
       ctx.beginPath();
-      ctx.arc(this.mouse.x, this.mouse.y, 16, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(${metavisionRgb}, 0.22)`;
-      ctx.lineWidth = 1;
+      ctx.arc(this.mouse.x, this.mouse.y, 18, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(${metavisionRgb}, 0.34)`;
+      ctx.lineWidth = 1.1;
       ctx.stroke();
     }
   }

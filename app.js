@@ -859,11 +859,29 @@ document.addEventListener('DOMContentLoaded', () => {
       const rect = el.getBoundingClientRect();
       if (rect.top < vh * 0.92 && rect.bottom > 0) {
         el.classList.add('is-visible');
-      } else if (rect.top >= vh * 0.92) {
+      } else if (rect.top >= vh * 0.96) {
         el.classList.remove('is-visible');
       }
     });
   }
+
+  let scrollResetTicking = false;
+  window.addEventListener('scroll', () => {
+    if (scrollResetTicking) return;
+    scrollResetTicking = true;
+    requestAnimationFrame(() => {
+      scrollResetTicking = false;
+      const vh = window.innerHeight || document.documentElement.clientHeight || 900;
+      const activeSection = document.querySelector('.content-section.active');
+      if (!activeSection) return;
+      activeSection.querySelectorAll('.reveal-on-scroll.is-visible').forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        if (rect.top > vh * 1.04) {
+          el.classList.remove('is-visible');
+        }
+      });
+    });
+  }, { passive: true });
 
   // Animate Dossier Stat Bars & Radar
   function drawSaeRadar() {
@@ -942,9 +960,17 @@ document.addEventListener('DOMContentLoaded', () => {
     navLinks.forEach((btn) => btn.classList.toggle('active', btn.getAttribute('data-target') === targetId));
     window.scrollTo({ top: 0, behavior: 'auto' });
     const activeEl = document.getElementById(targetId);
+    const skipMotion = reduceMotionQuery && reduceMotionQuery.matches;
+    if (activeEl && !skipMotion) {
+      applyAutoRevealClasses(document);
+      activeEl.querySelectorAll('.reveal-on-scroll').forEach((el) => el.classList.remove('is-visible'));
+      void activeEl.offsetHeight;
+    }
     requestAnimationFrame(() => {
-      refreshScrollReveals(activeEl || document);
-      refreshScrollReveals(document.querySelector('.site-footer'));
+      requestAnimationFrame(() => {
+        refreshScrollReveals(activeEl || document);
+        refreshScrollReveals(document.querySelector('.site-footer'));
+      });
     });
     if (targetId === 'dossierSection') {
       drawSaeRadar();
@@ -1006,7 +1032,7 @@ document.addEventListener('DOMContentLoaded', () => {
       timelineContainer.appendChild(item);
       renderedIdx += 1;
     });
-    refreshScrollReveals(timelineContainer);
+    requestAnimationFrame(() => requestAnimationFrame(() => refreshScrollReveals(timelineContainer)));
   }
 
   document.querySelectorAll('.t-filter-btn').forEach((btn) => {
@@ -1054,7 +1080,7 @@ document.addEventListener('DOMContentLoaded', () => {
       galleryGrid.appendChild(card);
       renderedIdx += 1;
     });
-    refreshScrollReveals(galleryGrid);
+    requestAnimationFrame(() => requestAnimationFrame(() => refreshScrollReveals(galleryGrid)));
   }
 
   document.querySelectorAll('.g-filter-btn').forEach((btn) => {
@@ -1200,5 +1226,9 @@ document.addEventListener('DOMContentLoaded', () => {
   renderTimeline('all');
   renderGallery('all');
   renderWeaponDetail('counter');
-  refreshScrollReveals(document);
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      refreshScrollReveals(document);
+    });
+  });
 });

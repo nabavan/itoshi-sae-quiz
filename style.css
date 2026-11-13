@@ -79,8 +79,8 @@ body.sae-theme {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 1;
-  opacity: 0.9;
+  z-index: 2;
+  opacity: 1;
 }
 
 .bg-glow {
@@ -367,7 +367,7 @@ body.flow-mode-active .bg-grid {
    ========================================================================== */
 .page-container {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   max-width: 1240px;
   margin: 0 auto;
   padding: 2rem 1.5rem 4rem;
@@ -661,19 +661,26 @@ html.js-reveal-ready .reveal-on-scroll.is-visible {
 
 .visual-aura-ring {
   position: absolute;
-  inset: -14px;
-  border-radius: calc(var(--radius-lg) + 10px);
-  background: conic-gradient(from 0deg, rgba(225, 29, 72, 0.4), transparent 32%, rgba(0, 229, 195, 0.34) 68%, rgba(234, 179, 8, 0.3), rgba(225, 29, 72, 0.4));
-  filter: blur(22px);
-  opacity: 0.78;
+  inset: -18px;
+  border-radius: calc(var(--radius-lg) + 14px);
+  background: conic-gradient(
+    from 0deg,
+    rgba(225, 29, 72, 0.72),
+    transparent 28%,
+    rgba(0, 229, 195, 0.6) 58%,
+    rgba(234, 179, 8, 0.54) 80%,
+    rgba(225, 29, 72, 0.72)
+  );
+  filter: blur(18px);
+  opacity: 0.92;
   z-index: 0;
   pointer-events: none;
-  animation: auraOrbitSpin 20s linear infinite;
+  animation: auraOrbitSpin 12s linear infinite;
 }
 
 @keyframes auraOrbitSpin {
   0% { transform: rotate(0deg) scale(1); }
-  50% { transform: rotate(180deg) scale(1.02); }
+  50% { transform: rotate(180deg) scale(1.03); }
   100% { transform: rotate(360deg) scale(1); }
 }
 
@@ -693,7 +700,7 @@ html.js-reveal-ready .reveal-on-scroll.is-visible {
   height: 100%;
   object-fit: cover;
   object-position: center 12%;
-  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), filter 0.45s ease;
 }
 
 .visual-frame:hover .hero-sae-portrait {
@@ -704,18 +711,26 @@ html.js-reveal-ready .reveal-on-scroll.is-visible {
 .visual-overlay-scanline {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, transparent 0%, rgba(0, 229, 195, 0.1) 50%, transparent 100%);
-  height: 36%;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 229, 195, 0.06) 62%,
+    rgba(0, 229, 195, 0.24) 95%,
+    rgba(255, 42, 95, 0.4) 100%
+  );
+  border-bottom: 2px solid rgba(0, 229, 195, 0.75);
+  box-shadow: 0 4px 18px rgba(0, 229, 195, 0.32);
+  height: 28%;
   z-index: 3;
   pointer-events: none;
-  animation: saeScanSweep 5.5s linear infinite;
+  animation: saeScanSweep 4.2s linear infinite;
 }
 
 @keyframes saeScanSweep {
   0% { transform: translateY(-100%); opacity: 0; }
-  25% { opacity: 0.7; }
-  80% { opacity: 0.7; }
-  100% { transform: translateY(310%); opacity: 0; }
+  15% { opacity: 0.92; }
+  85% { opacity: 0.92; }
+  100% { transform: translateY(380%); opacity: 0; }
 }
 
 .visual-badge {
