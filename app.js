@@ -49,6 +49,24 @@ class SoundManager {
   }
 
   playClick() { this.tone(620, 0.05, 'triangle', 0.045, 780); }
+  resume() { this.ensureCtx(); }
+  playBeatTick(accent = false) {
+    this.tone(accent ? 880 : 540, 0.035, 'triangle', accent ? 0.05 : 0.032);
+  }
+  playHit(grade) {
+    if (grade === 'perfect') {
+      this.tone(740, 0.08, 'sine', 0.065, 980);
+    } else if (grade === 'good') {
+      this.tone(520, 0.08, 'triangle', 0.05, 580);
+    } else {
+      this.tone(160, 0.12, 'sawtooth', 0.055, 95);
+    }
+  }
+  playVictory() {
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, idx) => {
+      setTimeout(() => this.tone(f, 0.14, 'triangle', 0.06), idx * 75);
+    });
+  }
   playKick() { this.tone(190, 0.12, 'sawtooth', 0.075, 58); }
   playPower() {
     this.tone(330, 0.14, 'sine', 0.06, 660);
@@ -212,12 +230,14 @@ function escapeHtml(str) {
 }
 
 class SaeCallController {
-  constructor(sfx) {
+  constructor(sfx, callbacks = {}) {
     this.sfx = sfx;
+    this.callbacks = callbacks;
     this.respect = 32;
     this.seconds = 0;
     this.timerInterval = null;
     this.typingTimer = null;
+    this.duelLaunchTimer = null;
     this.activeLayer = 'A';
     this.currentEmotion = 'neutral';
     this.fullReplyText = '';
@@ -256,12 +276,17 @@ class SaeCallController {
     this.elForm = document.getElementById('callMessageForm');
     this.elHistoryModal = document.getElementById('callHistoryModal');
     this.elHistoryList = document.getElementById('callHistoryList');
+    this.elLaunchDuelBtn = document.getElementById('launchDuelNowBtn');
 
     this.bindEvents();
     this.resetCall(false);
   }
 
   bindEvents() {
+    this.elLaunchDuelBtn?.addEventListener('click', () => {
+      this.sfx?.playPower();
+      this.callbacks.onTriggerEvaluationDuel?.();
+    });
     this.elForm?.addEventListener('submit', (e) => {
       e.preventDefault();
       const msg = (this.elInput?.value || '').trim();
@@ -390,9 +415,50 @@ class SaeCallController {
     this.updateRespect(delta);
     this.history.push({ who: 'sae', text: replyText, emotion: nextEmotion });
     this.typeReply(replyText, nextEmotion === 'flow' ? 'FLOW LINK' : 'RE AL LINE');
+
+    if (matched?.triggersDuel) {
+      if (this.elLaunchDuelBtn) this.elLaunchDuelBtn.hidden = false;
+      clearTimeout(this.duelLaunchTimer);
+      this.duelLaunchTimer = setTimeout(() => {
+        this.finishTypingNow();
+        this.callbacks.onTriggerEvaluationDuel?.();
+      }, 1050);
+    }
+  }
+
+  reportDuelResult(result) {
+    if (!result) return;
+    let emotion = 'smirk';
+    let delta = 0;
+    let reply = '';
+
+    if (!result.completed) {
+      emotion = 'annoyed';
+      delta = -4;
+      reply = 'Зійшов з поля посеред ритм-дуелі? Без витримки навіть проти напівсили не встоїш. Повертайся у симуляцію, коли зберешся.';
+    } else if (result.playerAcc > result.botAcc + 0.05) {
+      emotion = 'flow';
+      delta = 14;
+      reply = `${result.playerAcc.toFixed(1)}% проти моїх ${result.botAcc.toFixed(1)}% на режимі «${result.difficultyName}»… Дивно. Ти не просто копіював темп — ти справді зламав ритм на полі.`;
+    } else if (Math.abs(result.playerAcc - result.botAcc) <= 0.05) {
+      emotion = 'intrigued';
+      delta = 8;
+      reply = `Абсолютний паритет (${result.playerAcc.toFixed(1)}% vs ${result.botAcc.toFixed(1)}%). Для спарингу U-20 непогано — підвищ складність, якщо хочеш випередити мене.`;
+    } else {
+      emotion = 'smirk';
+      delta = 3;
+      reply = `${result.playerAcc.toFixed(1)}% проти моїх ${result.botAcc.toFixed(1)}% на «${result.difficultyName}». Різниця очевидна: твоя точність ще гуляє під тиском темпу. Тренуйся ще.`;
+    }
+
+    this.setEmotion(emotion);
+    this.updateRespect(delta);
+    this.history.push({ who: 'sae', text: reply, emotion });
+    this.typeReply(reply, emotion === 'flow' ? 'FLOW VERDICT' : 'MATCH VERDICT');
   }
 
   resetCall(playSound = false) {
+    clearTimeout(this.duelLaunchTimer);
+    if (this.elLaunchDuelBtn) this.elLaunchDuelBtn.hidden = true;
     this.respect = 32;
     this.seconds = 0;
     this.history = [];
@@ -638,8 +704,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const sfx = new SoundManager();
   const bgm = new ThemeMusicManager();
   const ambient = new SaeAmbientFX(document.getElementById('saeAmbientCanvas'));
-  const arena = new SaePlaymakerArena(document.getElementById('gameCanvas'), sfx);
-  const callCtrl = new SaeCallController(sfx);
+  let isDuelGameUnlocked = false;
+  let arena = null;
+
+  const callCtrl = new SaeCallController(sfx, {
+    onTriggerEvaluationDuel: () => {
+      isDuelGameUnlocked = true;
+      activateSection('gameSection');
+      showToast('Активовано приховану дуель U-20: Рін vs Сае');
+    }
+  });
+
+  arena = new SaeRinAdofaiDuel(document.getElementById('gameCanvas'), sfx, {
+    onReturnToCall: (result) => {
+      activateSection('callSection');
+      callCtrl.reportDuelResult(result);
+    }
+  });
   const quizApp = new SaeQuizApp(sfx);
 
   let toastTimer = null;
@@ -785,6 +866,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const sections = document.querySelectorAll('.content-section');
 
   function activateSection(targetId) {
+    if (targetId === 'gameSection' && !isDuelGameUnlocked) {
+      showToast('Міні-гра відкривається лише через «Оціни мене» у Дзвінку Сае');
+      activateSection('callSection');
+      return;
+    }
     sections.forEach((sec) => sec.classList.toggle('active', sec.id === targetId));
     navLinks.forEach((btn) => btn.classList.toggle('active', btn.getAttribute('data-target') === targetId));
     window.scrollTo({ top: 0, behavior: 'auto' });

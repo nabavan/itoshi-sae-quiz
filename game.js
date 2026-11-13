@@ -1,5 +1,5 @@
 /* ==========================================================================
-   BLUE LOCK // ITOSHI SAE AMBIENT FORMULA FX & 2D TACTICAL ARENA
+   BLUE LOCK // ITOSHI SAE AMBIENT FORMULA FX & ADOFAI RIN VS SAE DUEL
    ========================================================================== */
 'use strict';
 
@@ -109,788 +109,952 @@ class SaeAmbientFX {
   }
 }
 
-class SaePlaymakerArena {
-  constructor(canvas, sfx) {
+const ADOFAI_DIFFICULTIES = [
+  {
+    id: 0,
+    code: 'LVL 01 · 108 BPM',
+    name: 'Розминка U-20 (Простий)',
+    brief: 'LVL 01 // Розминка U-20 (108 BPM, 32 кроки) — Рівний ритм для контролю темпу. Бот Сае грає паралельно в нижній доріжці.',
+    bpm: 108,
+    stepCount: 32,
+    perfectMs: 74,
+    goodMs: 140,
+    hitWindowMs: 185,
+    allowFastCorners: false,
+    botProfile: { perfectProb: 0.72, goodProb: 0.24, missProb: 0.04, perfectJitterMs: 30, goodMinMs: 78, goodMaxMs: 122 },
+    seed: 101
+  },
+  {
+    id: 1,
+    code: 'LVL 02 · 136 BPM',
+    name: 'Центр поля (Середній)',
+    brief: 'LVL 02 // Центр поля (136 BPM, 44 кроки) — Прискорені повороти W/S/D у стилі дуелі півзахисту U-20. Точність Сае зростає.',
+    bpm: 136,
+    stepCount: 44,
+    perfectMs: 58,
+    goodMs: 115,
+    hitWindowMs: 160,
+    allowFastCorners: true,
+    botProfile: { perfectProb: 0.86, goodProb: 0.12, missProb: 0.02, perfectJitterMs: 22, goodMinMs: 62, goodMaxMs: 96 },
+    seed: 202
+  },
+  {
+    id: 2,
+    code: 'LVL 03 · 164 BPM',
+    name: 'Flow: Фінальна дуель (Складний)',
+    brief: 'LVL 03 // Flow Ch. 147 (164 BPM, 56 кроків) — Швидкі каскади без права на збій проти пробудженого World XI Сае.',
+    bpm: 164,
+    stepCount: 56,
+    perfectMs: 48,
+    goodMs: 95,
+    hitWindowMs: 138,
+    allowFastCorners: true,
+    botProfile: { perfectProb: 0.94, goodProb: 0.06, missProb: 0.0, perfectJitterMs: 14, goodMinMs: 50, goodMaxMs: 78 },
+    seed: 303
+  }
+];
+
+const DIR_META = {
+  D: { dx: 1, dy: 0, angle: 0, label: 'D' },
+  S: { dx: 0, dy: 1, angle: Math.PI / 2, label: 'S' },
+  A: { dx: -1, dy: 0, angle: Math.PI, label: 'A' },
+  W: { dx: 0, dy: -1, angle: -Math.PI / 2, label: 'W' }
+};
+
+function normAngle(rad) {
+  let a = rad % (Math.PI * 2);
+  if (a <= -Math.PI) a += Math.PI * 2;
+  if (a > Math.PI) a -= Math.PI * 2;
+  return a;
+}
+
+function posMod(v, mod) {
+  return ((v % mod) + mod) % mod;
+}
+
+function createRng(seed) {
+  let s = seed >>> 0;
+  return () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+}
+
+class SaeRinAdofaiDuel {
+  constructor(canvas, sfx, callbacks = {}) {
     this.canvas = canvas;
     this.ctx = canvas ? canvas.getContext('2d') : null;
     this.sfx = sfx;
+    this.callbacks = callbacks;
 
     this.W = 1080;
-    this.H = 720;
-    this.goalY = 74;
-    this.goalW = 296;
-    this.goalLeft = (this.W - this.goalW) / 2;
-    this.goalRight = this.goalLeft + this.goalW;
-    this.netDepth = 44;
-    this.maxPull = 148;
+    this.H = 540;
+    this.laneHeight = 264;
+    this.tileSize = 72;
+    this.planetDist = this.tileSize;
 
-    this.storageBestKey = 'sae_arena_best_v1';
-    this.scenarioIndex = 0;
-    this.endlessWave = 1;
-    this.score = 0;
-    this.streak = 0;
-    this.bestScore = this.readInt(this.storageBestKey, 0);
-    this.flowCharge = 100;
-    this.flowActive = false;
+    this.diffIndex = 0;
+    this.state = 'idle'; // 'idle' | 'countdown' | 'playing' | 'finished'
+    this.startPerfMs = 0;
+    this.lastBeatTickIndex = -1;
+    this.rafId = null;
 
-    this.currentSpin = -26;
-    this.isDragging = false;
-    this.activePointerId = null;
-    this.dragPull = { dx: 0, dy: 0, powerPct: 0, angleDeg: 0 };
+    this.chart = null;
+    this.botPlan = [];
+    this.botCursor = 0;
+    this.botStats = null;
 
-    this.spawnPos = { x: 840, y: 430 };
-    this.ball = {
-      x: this.spawnPos.x,
-      y: this.spawnPos.y,
-      vx: 0,
-      vy: 0,
-      radius: 12,
-      spin: 0,
-      rotAngle: 0,
-      inFlight: false,
-      resultHandled: false,
-      hitTargetZone: false,
-      trail: []
-    };
+    this.playerCursor = 0;
+    this.playerVisualSegStart = 0;
+    this.playerStats = null;
 
-    this.gk = {
-      x: this.W * 0.5,
-      y: this.goalY + 26,
-      w: 48,
-      h: 22,
-      minX: this.goalLeft + 32,
-      maxX: this.goalRight - 32,
-      speed: 195,
-      dir: 1,
-      stunTimer: 0
-    };
-
-    this.defenders = [];
-    this.passZone = null;
     this.particles = [];
-    this.shockwaves = [];
-    this.banner = null;
-    this.simTime = 0;
-    this.lastFrame = performance.now();
-    this.resetRoundTimer = null;
+    this.popups = [];
+    this.keyFlash = { W: 0, S: 0, A: 0, D: 0 };
+    this.botKeyFlash = { key: null, until: 0 };
 
-    this.formulas = ['f(θ)=r·cos(t)', 'Δv=9.8m/s', 'NG-XI', '0°', 'λ=0.98', 'ReAl-10'];
+    this.playerCam = { x: 0, y: 0 };
+    this.botCam = { x: 0, y: 0 };
 
-    this.bindElements();
-    if (this.canvas && this.ctx) {
-      this.loadScenario(0);
-      this.attachEvents();
-      this.loop(performance.now());
-    }
+    this.cacheDom();
+    this.loadDifficulty(0);
+    this.bindEvents();
+    this.startLoop();
   }
 
-  readInt(key, fallback) {
-    try {
-      const val = parseInt(localStorage.getItem(key) || '', 10);
-      return Number.isFinite(val) ? val : fallback;
-    } catch {
-      return fallback;
-    }
+  cacheDom() {
+    this.dom = {
+      diffPills: document.querySelectorAll('.diff-pill'),
+      brief: document.getElementById('gameScenarioBrief'),
+      playerAcc: document.getElementById('playerAccVal'),
+      playerCombo: document.getElementById('playerComboVal'),
+      playerPerf: document.getElementById('playerPerfVal'),
+      botAcc: document.getElementById('botAccVal'),
+      botCombo: document.getElementById('botComboVal'),
+      botPerf: document.getElementById('botPerfVal'),
+      deltaBadge: document.getElementById('duelDeltaBadge'),
+      progressFill: document.getElementById('duelProgressFill'),
+      stepLabel: document.getElementById('duelStepLabel'),
+      bpmBadge: document.getElementById('duelBpmBadge'),
+      overlayHint: document.getElementById('gameOverlayText'),
+      startBtn: document.getElementById('duelStartBtn'),
+      resetBtn: document.getElementById('duelResetBtn'),
+      nextDirBadge: document.getElementById('duelNextDirBadge'),
+      wsdaBtns: document.querySelectorAll('.wsda-key-btn'),
+      verdictOverlay: document.getElementById('duelVerdictOverlay'),
+      verdictKicker: document.getElementById('verdictKicker'),
+      verdictTitle: document.getElementById('verdictTitle'),
+      verdictQuote: document.getElementById('verdictQuote'),
+      verdictPlayerAcc: document.getElementById('verdictPlayerAcc'),
+      verdictPlayerDetail: document.getElementById('verdictPlayerDetail'),
+      verdictBotAcc: document.getElementById('verdictBotAcc'),
+      verdictBotDetail: document.getElementById('verdictBotDetail'),
+      verdictRetryBtn: document.getElementById('verdictRetryBtn'),
+      verdictToCallBtn: document.getElementById('verdictToCallBtn'),
+      backToCallBtn: document.getElementById('backToCallBtn')
+    };
   }
 
-  writeInt(key, val) {
-    try {
-      localStorage.setItem(key, String(val));
-    } catch {
-      // Ignore storage failures
-    }
-  }
-
-  bindElements() {
-    this.wrapperEl = document.querySelector('#gameSection .game-wrapper');
-    this.overlayHint = document.getElementById('gameOverlayText');
-    this.scenarioBriefEl = document.getElementById('gameScenarioBrief');
-    this.scenarioPills = document.querySelectorAll('.scenario-pill[data-scenario]');
-
-    this.hudScoreVal = document.getElementById('hudScoreVal');
-    this.hudStreakVal = document.getElementById('hudStreakVal');
-    this.hudBestVal = document.getElementById('hudBestVal');
-    this.hudFlowPct = document.getElementById('hudFlowPct');
-    this.hudFlowFill = document.getElementById('hudFlowFill');
-    this.hudPowerAngle = document.getElementById('hudPowerAngle');
-
-    this.spinSlider = document.getElementById('spinRangeSlider');
-    this.spinMeter = document.getElementById('spinMeterDisplay');
-    this.spinLeftBtn = document.getElementById('spinLeftBtn');
-    this.spinZeroBtn = document.getElementById('spinZeroBtn');
-    this.spinRightBtn = document.getElementById('spinRightBtn');
-    this.triggerFlowBtn = document.getElementById('triggerFlowBtn');
-    this.resetShotBtn = document.getElementById('resetShotBtn');
-  }
-
-  attachEvents() {
-    this.scenarioPills.forEach((pill) => {
+  bindEvents() {
+    this.dom.diffPills.forEach((pill) => {
       pill.addEventListener('click', () => {
-        const idx = parseInt(pill.getAttribute('data-scenario') || '0', 10);
-        this.loadScenario(idx);
-        this.sfx?.playClick();
+        const idx = Number(pill.dataset.diff);
+        if (!Number.isNaN(idx)) {
+          this.sfx?.playClick();
+          this.loadDifficulty(idx);
+        }
       });
     });
 
-    if (this.spinSlider) {
-      this.spinSlider.value = String(this.currentSpin);
-      this.spinSlider.addEventListener('input', () => {
-        this.setSpin(parseInt(this.spinSlider.value, 10));
+    if (this.dom.startBtn) {
+      this.dom.startBtn.addEventListener('click', () => this.startDuel());
+    }
+    if (this.dom.resetBtn) {
+      this.dom.resetBtn.addEventListener('click', () => this.loadDifficulty(this.diffIndex));
+    }
+    if (this.dom.verdictRetryBtn) {
+      this.dom.verdictRetryBtn.addEventListener('click', () => {
+        this.loadDifficulty(this.diffIndex);
+        this.startDuel();
       });
     }
-    this.spinLeftBtn?.addEventListener('click', () => this.adjustSpin(-14));
-    this.spinRightBtn?.addEventListener('click', () => this.adjustSpin(14));
-    this.spinZeroBtn?.addEventListener('click', () => this.setSpin(0));
-    this.triggerFlowBtn?.addEventListener('click', () => this.toggleFlow());
-    this.resetShotBtn?.addEventListener('click', () => {
-      this.resetBall();
-      this.sfx?.playClick();
+    if (this.dom.verdictToCallBtn) {
+      this.dom.verdictToCallBtn.addEventListener('click', () => this.requestReturnToCall(true));
+    }
+    if (this.dom.backToCallBtn) {
+      this.dom.backToCallBtn.addEventListener('click', () => this.requestReturnToCall(false));
+    }
+
+    this.dom.wsdaBtns.forEach((btn) => {
+      btn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        const key = btn.dataset.key;
+        if (key) this.handleDirectionInput(key);
+      });
     });
-
-    const toCanvasCoords = (e) => {
-      const rect = this.canvas.getBoundingClientRect();
-      return {
-        x: ((e.clientX - rect.left) / rect.width) * this.W,
-        y: ((e.clientY - rect.top) / rect.height) * this.H
-      };
-    };
-
-    this.canvas.addEventListener('pointerdown', (e) => {
-      if (this.ball.inFlight) return;
-      const pos = toCanvasCoords(e);
-      const dx = pos.x - this.ball.x;
-      const dy = pos.y - this.ball.y;
-      if (Math.hypot(dx, dy) <= 95) {
-        this.isDragging = true;
-        this.activePointerId = e.pointerId;
-        this.canvas.setPointerCapture?.(e.pointerId);
-        this.updateDrag(pos);
-      }
-    });
-
-    window.addEventListener('pointermove', (e) => {
-      if (!this.isDragging || (this.activePointerId !== null && e.pointerId !== this.activePointerId)) return;
-      this.updateDrag(toCanvasCoords(e));
-    });
-
-    const endDrag = (e) => {
-      if (!this.isDragging || (this.activePointerId !== null && e.pointerId !== this.activePointerId)) return;
-      this.isDragging = false;
-      this.activePointerId = null;
-      if (this.dragPull.powerPct >= 14) {
-        this.fireBall();
-      } else {
-        this.dragPull = { dx: 0, dy: 0, powerPct: 0, angleDeg: 0 };
-        this.updateHud();
-      }
-    };
-
-    window.addEventListener('pointerup', endDrag);
-    window.addEventListener('pointercancel', endDrag);
 
     window.addEventListener('keydown', (e) => {
-      const activeSec = document.getElementById('gameSection');
-      if (!activeSec || !activeSec.classList.contains('active')) return;
-      if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+      const gameSection = document.getElementById('gameSection');
+      if (!gameSection || !gameSection.classList.contains('active')) return;
+      if (e.repeat) return;
 
-      const key = e.key.toLowerCase();
-      if (key === 'a' || key === 'q') {
-        this.adjustSpin(-10);
-      } else if (key === 'd' || key === 'e') {
-        this.adjustSpin(10);
-      } else if (key === 'r') {
-        this.resetBall();
-      } else if (key === 'f' || e.code === 'Space') {
+      const activeTag = document.activeElement?.tagName;
+      if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
+
+      const keyMap = {
+        KeyW: 'W', ArrowUp: 'W',
+        KeyS: 'S', ArrowDown: 'S',
+        KeyA: 'A', ArrowLeft: 'A',
+        KeyD: 'D', ArrowRight: 'D'
+      };
+
+      const mapped = keyMap[e.code];
+      if (mapped) {
         e.preventDefault();
-        this.toggleFlow();
+        this.handleDirectionInput(mapped);
+        return;
+      }
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (this.state === 'idle' || this.state === 'finished') {
+          if (this.state === 'finished') this.loadDifficulty(this.diffIndex);
+          this.startDuel();
+        }
+      } else if (e.code === 'KeyR') {
+        e.preventDefault();
+        this.loadDifficulty(this.diffIndex);
       }
     });
   }
 
-  adjustSpin(delta) {
-    this.setSpin(this.currentSpin + delta);
+  requestReturnToCall(fromVerdict) {
     this.sfx?.playClick();
-  }
-
-  setSpin(val) {
-    this.currentSpin = Math.max(-100, Math.min(100, Math.round(val)));
-    if (this.spinSlider) this.spinSlider.value = String(this.currentSpin);
-    this.updateHud();
-  }
-
-  toggleFlow() {
-    if (this.flowActive) {
-      this.flowActive = false;
-      this.updateHud();
-      return;
+    const completed = Boolean(fromVerdict || this.state === 'finished' || (this.chart && this.playerCursor >= this.chart.steps.length));
+    if (this.state === 'playing' || this.state === 'countdown') {
+      this.state = 'idle';
     }
-    if (this.flowCharge < 100) {
-      this.showBanner('FLOW НЕ ЗАРЯЖЕНИЙ', 'Забийте або віддайте точний пас (+34%)', '#fbbf24');
-      return;
+    if (typeof this.callbacks.onReturnToCall === 'function') {
+      const diff = ADOFAI_DIFFICULTIES[this.diffIndex];
+      this.callbacks.onReturnToCall({
+        completed,
+        difficultyName: diff.name,
+        playerAcc: this.getAccuracy(this.playerStats),
+        botAcc: this.getAccuracy(this.botStats),
+        playerCombo: this.playerStats.maxCombo,
+        botCombo: this.botStats.maxCombo
+      });
     }
-    this.flowActive = true;
-    this.sfx?.playPower?.();
-    this.showBanner('FLOW: ПРЕКРАСНЕ РУЙНУВАННЯ', 'Точність дуги й пробиття на максимумі', '#00e5c3');
-    this.updateHud();
   }
 
-  loadScenario(idx) {
-    this.scenarioIndex = Math.max(0, Math.min(4, idx));
-    this.scenarioPills.forEach((p) => {
-      const active = parseInt(p.getAttribute('data-scenario') || '0', 10) === this.scenarioIndex;
-      p.classList.toggle('active', active);
-      p.setAttribute('aria-selected', active ? 'true' : 'false');
+  buildChart(diff) {
+    const rng = createRng(diff.seed);
+    const beatMs = 60000 / diff.bpm;
+    const countInMs = 4 * beatMs;
+
+    const easyMotifs = [
+      ['D', 'D', 'W', 'D'],
+      ['D', 'D', 'S', 'D'],
+      ['D', 'W', 'D', 'D', 'S', 'D'],
+      ['D', 'S', 'D', 'D', 'W', 'D'],
+      ['D', 'D', 'D', 'D']
+    ];
+    const medMotifs = [
+      ['D', 'W', 'D', 'S', 'D'],
+      ['D', 'W', 'W', 'D', 'S', 'D'],
+      ['D', 'S', 'S', 'D', 'W', 'D'],
+      ['D', 'W', 'A', 'W', 'D', 'D'],
+      ['D', 'S', 'A', 'S', 'D', 'D']
+    ];
+    const hardMotifs = [
+      ['D', 'W', 'D', 'S', 'D', 'W', 'D'],
+      ['D', 'W', 'A', 'W', 'D', 'S', 'S', 'D'],
+      ['D', 'S', 'A', 'S', 'D', 'W', 'W', 'D'],
+      ['D', 'W', 'D', 'W', 'D', 'S', 'D', 'S', 'D']
+    ];
+
+    const pool = diff.id === 0 ? easyMotifs : (diff.id === 1 ? medMotifs : hardMotifs);
+    const dirList = [];
+    while (dirList.length < diff.stepCount) {
+      const motif = pool[Math.floor(rng() * pool.length)];
+      for (const d of motif) {
+        if (dirList.length < diff.stepCount) dirList.push(d);
+      }
+    }
+
+    const tiles = [{ gx: 0, gy: 0, x: 0, y: 0, dirIn: null, dirOut: dirList[0] }];
+    const occupied = new Set(['0,0']);
+    let gx = 0;
+    let gy = 0;
+    const verifiedDirs = [];
+
+    for (let i = 0; i < diff.stepCount; i++) {
+      let chosen = dirList[i];
+      let vec = DIR_META[chosen];
+      let nx = gx + vec.dx;
+      let ny = gy + vec.dy;
+      const prevDir = verifiedDirs[i - 1] || null;
+      const isReverse = prevDir && (DIR_META[prevDir].dx === -vec.dx && DIR_META[prevDir].dy === -vec.dy);
+
+      if (occupied.has(`${nx},${ny}`) || isReverse || ny > 3 || ny < -3) {
+        chosen = 'D';
+        vec = DIR_META.D;
+        nx = gx + vec.dx;
+        ny = gy + vec.dy;
+      }
+
+      verifiedDirs.push(chosen);
+      occupied.add(`${nx},${ny}`);
+      tiles[i].dirOut = chosen;
+      gx = nx;
+      gy = ny;
+      tiles.push({
+        gx,
+        gy,
+        x: gx * this.tileSize,
+        y: gy * this.tileSize,
+        dirIn: chosen,
+        dirOut: null
+      });
+    }
+
+    const steps = [];
+    let cumTime = countInMs;
+    let currentCW = 1;
+
+    for (let i = 0; i < verifiedDirs.length; i++) {
+      const dir = verifiedDirs[i];
+      const outAngle = DIR_META[dir].angle;
+      const fromAngle = i === 0
+        ? normAngle(outAngle + Math.PI)
+        : normAngle(DIR_META[verifiedDirs[i - 1]].angle + Math.PI);
+
+      const cwSweep = posMod(outAngle - fromAngle, Math.PI * 2) || Math.PI * 2;
+      const ccwSweep = posMod(fromAngle - outAngle, Math.PI * 2) || Math.PI * 2;
+
+      let chosenCW = currentCW;
+      let sweep = chosenCW > 0 ? cwSweep : -ccwSweep;
+
+      if (!diff.allowFastCorners && Math.abs(sweep) < Math.PI * 0.75) {
+        chosenCW = -chosenCW;
+        sweep = chosenCW > 0 ? cwSweep : -ccwSweep;
+      } else if (diff.id === 2 && rng() < 0.28) {
+        chosenCW = -chosenCW;
+        sweep = chosenCW > 0 ? cwSweep : -ccwSweep;
+      }
+      currentCW = chosenCW;
+
+      const stepBeats = Math.abs(sweep) / Math.PI;
+      const stepDurationMs = stepBeats * beatMs;
+      if (i > 0) cumTime += stepDurationMs;
+
+      steps.push({
+        index: i,
+        dir,
+        fromAngle,
+        outAngle,
+        cw: chosenCW,
+        sweep,
+        stepBeats,
+        durationMs: i === 0 ? beatMs : stepDurationMs,
+        targetMs: cumTime
+      });
+    }
+
+    return {
+      diff,
+      beatMs,
+      countInMs,
+      tiles,
+      steps
+    };
+  }
+
+  buildBotPlan(chart) {
+    const { diff, steps } = chart;
+    const rng = createRng(diff.seed + Math.floor(Math.random() * 900) + 17);
+    const prof = diff.botProfile;
+
+    return steps.map((step) => {
+      const roll = rng();
+      let grade = 'perfect';
+      let offsetMs = 0;
+
+      if (roll < prof.perfectProb) {
+        grade = 'perfect';
+        offsetMs = (rng() * 2 - 1) * prof.perfectJitterMs;
+      } else if (roll < prof.perfectProb + prof.goodProb) {
+        grade = 'good';
+        const mag = prof.goodMinMs + rng() * (prof.goodMaxMs - prof.goodMinMs);
+        offsetMs = (rng() < 0.5 ? -1 : 1) * mag;
+      } else {
+        grade = 'miss';
+        offsetMs = diff.hitWindowMs - 6;
+      }
+
+      return {
+        stepIndex: step.index,
+        dir: step.dir,
+        grade,
+        offsetMs,
+        triggerMs: step.targetMs + offsetMs
+      };
+    });
+  }
+
+  createEmptyStats(totalSteps) {
+    return {
+      totalSteps,
+      judged: 0,
+      perfect: 0,
+      good: 0,
+      miss: 0,
+      faults: 0,
+      points: 0,
+      combo: 0,
+      maxCombo: 0
+    };
+  }
+
+  getAccuracy(stats) {
+    if (!stats) return 100;
+    const denom = stats.judged + stats.faults;
+    if (denom <= 0) return 100;
+    return Math.max(0, Math.min(100, (stats.points / denom) * 100));
+  }
+
+  loadDifficulty(index) {
+    this.diffIndex = Math.max(0, Math.min(ADOFAI_DIFFICULTIES.length - 1, index));
+    const diff = ADOFAI_DIFFICULTIES[this.diffIndex];
+    this.chart = this.buildChart(diff);
+    this.botPlan = this.buildBotPlan(this.chart);
+
+    this.state = 'idle';
+    this.playerCursor = 0;
+    this.botCursor = 0;
+    this.playerVisualSegStart = 0;
+    this.lastBeatTickIndex = -1;
+    this.playerStats = this.createEmptyStats(diff.stepCount);
+    this.botStats = this.createEmptyStats(diff.stepCount);
+    this.particles = [];
+    this.popups = [];
+
+    this.playerCam = { x: this.chart.tiles[0].x, y: this.chart.tiles[0].y };
+    this.botCam = { x: this.chart.tiles[0].x, y: this.chart.tiles[0].y };
+
+    this.dom.diffPills.forEach((pill) => {
+      const active = Number(pill.dataset.diff) === this.diffIndex;
+      pill.classList.toggle('active', active);
+      pill.setAttribute('aria-selected', String(active));
     });
 
-    const briefs = [
-      'STAGE 01 // Нульовий кут (Ch. 115): закрути м’яч лівою ногою з правого флангу в дальній кут.',
-      'STAGE 02 // Ювелірний простріл: проведи пас крізь коридор захисників у золоту зону забігання Шідо або прямо у створ.',
-      'STAGE 03 // Еластіко + Тривела: обігни подвійну стінку різким боковим крученням.',
-      'STAGE 04 // Flow «Прекрасне руйнування»: прорви математично щільну оборону на максимальному темпі.',
-      'ENDLESS // Академія Re Al XI: серія прогресивних хвиль з рухомим пресингом.'
-    ];
-    if (this.scenarioBriefEl) this.scenarioBriefEl.textContent = briefs[this.scenarioIndex];
+    if (this.dom.brief) this.dom.brief.textContent = diff.brief;
+    if (this.dom.bpmBadge) this.dom.bpmBadge.textContent = `${diff.bpm} BPM`;
+    if (this.dom.verdictOverlay) this.dom.verdictOverlay.hidden = true;
+    if (this.dom.startBtn) {
+      this.dom.startBtn.textContent = '▶ СТАРТ ДУЕЛІ [ПРОБІЛ]';
+      this.dom.startBtn.classList.remove('is-armed');
+    }
+    if (this.dom.overlayHint) {
+      this.dom.overlayHint.textContent = 'НАТИСНИ «СТАРТ ДУЕЛІ» АБО [ПРОБІЛ] · КЕРУВАННЯ: W / S / A / D';
+      this.dom.overlayHint.style.display = 'block';
+    }
 
-    this.setupWaveEntities();
-    this.resetBall();
+    this.syncHud();
+    this.updateNextKeyHighlight();
   }
 
-  setupWaveEntities() {
-    this.defenders = [];
-    this.passZone = null;
+  startDuel() {
+    this.sfx?.resume();
+    this.sfx?.playClick();
+    if (this.state === 'finished') {
+      this.loadDifficulty(this.diffIndex);
+    }
+    if (this.state === 'playing' || this.state === 'countdown') return;
 
-    if (this.scenarioIndex === 0) {
-      // Zero-angle right flank; plenty of bottom/right clearance so 148px pull stays completely inside canvas
-      this.spawnPos = { x: 840, y: 425 };
-      this.setSpin(-42);
-      this.gk.speed = 195;
-      this.defenders = [
-        { x: 740, y: 245, r: 19, baseX: 740, amp: 38, freq: 1.5, phase: 0, label: 'DF #2' },
-        { x: 645, y: 195, r: 19, baseX: 645, amp: 45, freq: 1.8, phase: 1.4, label: 'DF #5' }
-      ];
-    } else if (this.scenarioIndex === 1) {
-      this.spawnPos = { x: 540, y: 495 };
-      this.setSpin(24);
-      this.gk.speed = 215;
-      this.passZone = { x: 660, y: 190, r: 44, label: 'SHIDOU ZONE (+150)' };
-      this.defenders = [
-        { x: 470, y: 310, r: 20, baseX: 470, amp: 65, freq: 2.0, phase: 0, label: 'MF #4' },
-        { x: 615, y: 310, r: 20, baseX: 615, amp: 65, freq: 2.0, phase: Math.PI, label: 'MF #8' }
-      ];
-    } else if (this.scenarioIndex === 2) {
-      this.spawnPos = { x: 315, y: 455 };
-      this.setSpin(46);
-      this.gk.speed = 235;
-      this.defenders = [
-        { x: 410, y: 270, r: 20, baseX: 410, amp: 42, freq: 2.1, phase: 0.4, label: 'BL #10' },
-        { x: 515, y: 235, r: 20, baseX: 515, amp: 46, freq: 2.3, phase: 1.9, label: 'CB #19' },
-        { x: 590, y: 295, r: 19, baseX: 590, amp: 35, freq: 1.7, phase: 0.9, label: 'CDM' }
-      ];
-    } else if (this.scenarioIndex === 3) {
-      this.spawnPos = { x: 760, y: 465 };
-      this.setSpin(-38);
-      this.gk.speed = 260;
-      this.passZone = { x: 420, y: 185, r: 38, label: 'FLOW APEX (+200)' };
-      this.defenders = [
-        { x: 650, y: 290, r: 20, baseX: 650, amp: 52, freq: 2.4, phase: 0, label: 'HIORI' },
-        { x: 540, y: 245, r: 21, baseX: 540, amp: 68, freq: 2.1, phase: 1.1, label: 'ISAGI' },
-        { x: 445, y: 280, r: 20, baseX: 445, amp: 50, freq: 2.5, phase: 2.2, label: 'KARASU' }
-      ];
+    this.botPlan = this.buildBotPlan(this.chart);
+    this.playerCursor = 0;
+    this.botCursor = 0;
+    this.playerStats = this.createEmptyStats(this.chart.steps.length);
+    this.botStats = this.createEmptyStats(this.chart.steps.length);
+    this.particles = [];
+    this.popups = [];
+    this.lastBeatTickIndex = -1;
+
+    this.state = 'countdown';
+    this.startPerfMs = performance.now();
+    this.playerVisualSegStart = 0;
+
+    if (this.dom.verdictOverlay) this.dom.verdictOverlay.hidden = true;
+    if (this.dom.startBtn) {
+      this.dom.startBtn.textContent = '● МАТЧ ТРИВАЄ...';
+      this.dom.startBtn.classList.add('is-armed');
+    }
+    if (this.dom.overlayHint) {
+      this.dom.overlayHint.textContent = 'ПРИГОТУЙСЯ: СЛУХАЙ МЕТРОНОМ І НАТИСКАЙ W / S / A / D НА БІТ!';
+    }
+    this.syncHud();
+    this.updateNextKeyHighlight();
+  }
+
+  handleDirectionInput(key) {
+    this.keyFlash[key] = performance.now() + 140;
+    this.flashPadKey(key, 'is-pressed');
+
+    if (this.state === 'idle') return;
+    if (this.state !== 'countdown' && this.state !== 'playing') return;
+    if (this.playerCursor >= this.chart.steps.length) return;
+
+    const elapsedMs = performance.now() - this.startPerfMs;
+    const step = this.chart.steps[this.playerCursor];
+    const diff = this.chart.diff;
+    const deltaMs = elapsedMs - step.targetMs;
+    const absErr = Math.abs(deltaMs);
+
+    if (absErr > diff.hitWindowMs) {
+      if (elapsedMs > this.chart.countInMs - diff.beatMs * 0.5) {
+        this.playerStats.faults += 1;
+        this.playerStats.combo = 0;
+        this.sfx?.playHit?.('miss');
+        this.flashPadKey(key, 'is-miss');
+        const pTile = this.chart.tiles[this.playerCursor];
+        this.addPopup('top', pTile.x, pTile.y - 36, 'РАНО!', '#f87171');
+        this.syncHud();
+      }
+      return;
+    }
+
+    if (key !== step.dir) {
+      this.judgePlayerStep(step, 'miss', elapsedMs, 'ХИБНА!');
+      return;
+    }
+
+    if (absErr <= diff.perfectMs) {
+      this.judgePlayerStep(step, 'perfect', elapsedMs, 'ІДЕАЛЬНО!');
+    } else if (absErr <= diff.goodMs) {
+      const tag = deltaMs < 0 ? 'ДОБРЕ (РАНО)' : 'ДОБРЕ (ПІЗНО)';
+      this.judgePlayerStep(step, 'good', elapsedMs, tag);
     } else {
-      const wave = this.endlessWave;
-      const sx = 240 + ((wave * 173) % 600);
-      const sy = 420 + ((wave * 47) % 85);
-      this.spawnPos = { x: sx, y: sy };
-      this.gk.speed = Math.min(340, 200 + wave * 14);
-      const defCount = Math.min(5, 2 + Math.floor(wave / 2));
-      for (let i = 0; i < defCount; i++) {
-        const bx = 320 + ((i + 0.5) * 440) / defCount;
-        const by = 215 + (i % 2) * 65;
-        this.defenders.push({
-          x: bx,
-          y: by,
-          r: 19,
-          baseX: bx,
-          amp: 42 + (wave % 3) * 14,
-          freq: 1.8 + i * 0.35,
-          phase: i * 1.3,
-          label: `RE AL D${i + 1}`
-        });
+      const tag = deltaMs < 0 ? 'РАНО' : 'ПІЗНО';
+      this.judgePlayerStep(step, 'miss', elapsedMs, tag);
+    }
+  }
+
+  judgePlayerStep(step, grade, elapsedMs, label) {
+    const st = this.playerStats;
+    st.judged += 1;
+    if (grade === 'perfect') {
+      st.perfect += 1;
+      st.points += 1;
+      st.combo += 1;
+    } else if (grade === 'good') {
+      st.good += 1;
+      st.points += 0.65;
+      st.combo += 1;
+    } else {
+      st.miss += 1;
+      st.combo = 0;
+    }
+    if (st.combo > st.maxCombo) st.maxCombo = st.combo;
+
+    this.sfx?.playHit?.(grade);
+    const tile = this.chart.tiles[step.index + 1];
+    const color = grade === 'perfect' ? '#00ffc8' : (grade === 'good' ? '#eab308' : '#ff2a5f');
+    this.addPopup('top', tile.x, tile.y - 38, label, color);
+    this.spawnBurst('top', tile.x, tile.y, color, grade === 'perfect' ? 14 : 8);
+
+    this.playerCursor += 1;
+    this.playerVisualSegStart = Math.max(elapsedMs, step.targetMs - 10);
+    this.updateNextKeyHighlight();
+    this.syncHud();
+  }
+
+  triggerBotStep(entry) {
+    const st = this.botStats;
+    st.judged += 1;
+    if (entry.grade === 'perfect') {
+      st.perfect += 1;
+      st.points += 1;
+      st.combo += 1;
+    } else if (entry.grade === 'good') {
+      st.good += 1;
+      st.points += 0.65;
+      st.combo += 1;
+    } else {
+      st.miss += 1;
+      st.combo = 0;
+    }
+    if (st.combo > st.maxCombo) st.maxCombo = st.combo;
+
+    const tile = this.chart.tiles[entry.stepIndex + 1];
+    const label = entry.grade === 'perfect' ? 'ІДЕАЛЬНО!' : (entry.grade === 'good' ? 'ДОБРЕ' : 'МІМО');
+    const color = entry.grade === 'perfect' ? '#eab308' : (entry.grade === 'good' ? '#fb923c' : '#f43f5e');
+    this.addPopup('bot', tile.x, tile.y - 38, label, color);
+    this.spawnBurst('bot', tile.x, tile.y, color, entry.grade === 'perfect' ? 12 : 7);
+
+    this.botKeyFlash = { key: entry.dir, until: performance.now() + 140 };
+    this.botCursor += 1;
+    this.syncHud();
+  }
+
+  flashPadKey(key, cls) {
+    this.dom.wsdaBtns.forEach((btn) => {
+      if (btn.dataset.key === key) {
+        btn.classList.add(cls);
+        setTimeout(() => btn.classList.remove(cls), 145);
       }
-      if (wave % 2 === 0) {
-        this.passZone = { x: this.W - sx * 0.72 + 120, y: 185, r: 40, label: 'TARGET RUN' };
-      }
-    }
+    });
   }
 
-  resetBall() {
-    clearTimeout(this.resetRoundTimer);
-    this.isDragging = false;
-    this.activePointerId = null;
-    this.ball.x = this.spawnPos.x;
-    this.ball.y = this.spawnPos.y;
-    this.ball.vx = 0;
-    this.ball.vy = 0;
-    this.ball.spin = this.currentSpin;
-    this.ball.inFlight = false;
-    this.ball.resultHandled = false;
-    this.ball.hitTargetZone = false;
-    this.ball.trail = [];
-    this.dragPull = { dx: 0, dy: 0, powerPct: 0, angleDeg: 0 };
-    if (this.overlayHint) {
-      this.overlayHint.textContent = 'ТЯГНИ ВІД М’ЯЧА НАЗАД ДЛЯ ПРИЦІЛУ (ІНДИКАТОР 100% ЗАВЖДИ В МЕЖАХ ПОЛЯ)';
-      this.overlayHint.style.opacity = '1';
+  updateNextKeyHighlight() {
+    const nextStep = this.chart?.steps[this.playerCursor];
+    const dir = nextStep ? nextStep.dir : null;
+    if (this.dom.nextDirBadge) {
+      this.dom.nextDirBadge.textContent = dir ? `НАСТУПНИЙ: [${dir}]` : 'ФІНІШ!';
     }
-    this.updateHud();
+    this.dom.wsdaBtns.forEach((btn) => {
+      btn.classList.toggle('is-target', btn.dataset.key === dir);
+    });
   }
 
-  updateDrag(pos) {
-    // Pull backward relative to ball: shot fires opposite to pull vector
-    let pdx = pos.x - this.ball.x;
-    let pdy = pos.y - this.ball.y;
-    const rawDist = Math.hypot(pdx, pdy);
-    if (rawDist > this.maxPull) {
-      const k = this.maxPull / rawDist;
-      pdx *= k;
-      pdy *= k;
-    }
-    const clampedDist = Math.min(rawDist, this.maxPull);
-    const powerPct = Math.round((clampedDist / this.maxPull) * 100);
-    const angleDeg = Math.round((Math.atan2(-pdy, -pdx) * 180) / Math.PI);
-
-    this.dragPull = { dx: pdx, dy: pdy, powerPct, angleDeg };
-    this.updateHud();
+  addPopup(lane, x, y, text, color) {
+    this.popups.push({ lane, x, y, text, color, life: 0.65, maxLife: 0.65 });
   }
 
-  fireBall() {
-    const speedScale = this.flowActive ? 1140 : 940;
-    const mag = Math.max(0.14, this.dragPull.powerPct / 100);
-    const pullLen = Math.hypot(this.dragPull.dx, this.dragPull.dy) || 1;
-    const dirX = -this.dragPull.dx / pullLen;
-    const dirY = -this.dragPull.dy / pullLen;
-
-    this.ball.vx = dirX * speedScale * mag;
-    this.ball.vy = dirY * speedScale * mag;
-    this.ball.spin = this.currentSpin;
-    this.ball.inFlight = true;
-    this.ball.resultHandled = false;
-    this.ball.trail = [];
-    if (this.overlayHint) this.overlayHint.style.opacity = '0';
-    this.sfx?.playKick?.();
-  }
-
-  updateHud() {
-    if (this.hudScoreVal) this.hudScoreVal.textContent = String(this.score);
-    if (this.hudStreakVal) this.hudStreakVal.textContent = `${this.streak}x`;
-    if (this.hudBestVal) this.hudBestVal.textContent = String(this.bestScore);
-    if (this.hudFlowPct) this.hudFlowPct.textContent = `${this.flowCharge}%`;
-    if (this.hudFlowFill) this.hudFlowFill.style.width = `${this.flowCharge}%`;
-
-    const rpm = this.currentSpin * 28;
-    if (this.spinMeter) {
-      this.spinMeter.textContent = `${rpm > 0 ? '+' : ''}${rpm} RPM`;
-    }
-    if (this.hudPowerAngle) {
-      this.hudPowerAngle.textContent = this.isDragging
-        ? `СИЛА ${this.dragPull.powerPct}% // КРУТ ${this.currentSpin > 0 ? '+' : ''}${this.currentSpin}%`
-        : `ЗАКРУТКА ${this.currentSpin > 0 ? '+' : ''}${this.currentSpin}%`;
-    }
-    if (this.triggerFlowBtn) {
-      this.triggerFlowBtn.classList.toggle('is-armed', this.flowActive);
-      this.triggerFlowBtn.textContent = this.flowActive
-        ? 'FLOW АКТИВНИЙ: ПРЕКРАСНЕ РУЙНУВАННЯ'
-        : 'АКТИВУВАТИ FLOW [F / ПРОБІЛ]';
-    }
-  }
-
-  showBanner(title, sub, color) {
-    this.banner = { title, sub, color, timer: 2.2 };
-  }
-
-  spawnExplosion(x, y, color, count = 24) {
+  spawnBurst(lane, x, y, color, count) {
     for (let i = 0; i < count; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const spd = 70 + Math.random() * 260;
+      const a = (Math.PI * 2 * i) / count + Math.random() * 0.4;
+      const spd = 70 + Math.random() * 140;
       this.particles.push({
+        lane,
         x,
         y,
         vx: Math.cos(a) * spd,
         vy: Math.sin(a) * spd,
-        life: 0.75 + Math.random() * 0.45,
-        maxLife: 1.2,
-        r: 2 + Math.random() * 3.5,
-        color
+        r: 2 + Math.random() * 2.8,
+        color,
+        life: 0.42,
+        maxLife: 0.42
       });
     }
-    this.shockwaves.push({ x, y, r: 8, maxR: 115, color, alpha: 0.9 });
   }
 
-  resolveRound(success, points, title, sub, color) {
-    if (this.ball.resultHandled) return;
-    this.ball.resultHandled = true;
-    this.ball.inFlight = false;
+  syncHud() {
+    const pAcc = this.getAccuracy(this.playerStats);
+    const bAcc = this.getAccuracy(this.botStats);
+    const total = this.chart ? this.chart.steps.length : 32;
 
-    if (success) {
-      this.streak += 1;
-      const bonus = this.flowActive ? Math.round(points * 1.5) : points;
-      this.score += bonus + this.streak * 25;
-      if (this.score > this.bestScore) {
-        this.bestScore = this.score;
-        this.writeInt(this.storageBestKey, this.bestScore);
-      }
-      this.flowCharge = Math.min(100, this.flowCharge + 34);
-      if (this.flowActive) {
-        this.flowActive = false;
-        this.flowCharge = 0;
-      }
-      if (this.scenarioIndex === 4) this.endlessWave += 1;
-      this.spawnExplosion(this.ball.x, this.ball.y, color, 30);
-      this.sfx?.playCorrect?.();
-    } else {
-      this.streak = 0;
-      this.flowCharge = Math.min(100, this.flowCharge + 14);
-      this.sfx?.playWrong?.();
+    if (this.dom.playerAcc) this.dom.playerAcc.textContent = `${pAcc.toFixed(1)}%`;
+    if (this.dom.playerCombo) this.dom.playerCombo.textContent = `${this.playerStats.combo}x`;
+    if (this.dom.playerPerf) {
+      this.dom.playerPerf.textContent = `${this.playerStats.perfect} / ${this.playerStats.miss + this.playerStats.faults}`;
     }
 
-    this.showBanner(title, sub, color);
-    this.updateHud();
-    this.resetRoundTimer = setTimeout(() => {
-      if (this.scenarioIndex === 4) this.setupWaveEntities();
-      this.resetBall();
-    }, 1450);
+    if (this.dom.botAcc) this.dom.botAcc.textContent = `${bAcc.toFixed(1)}%`;
+    if (this.dom.botCombo) this.dom.botCombo.textContent = `${this.botStats.combo}x`;
+    if (this.dom.botPerf) this.dom.botPerf.textContent = `${this.botStats.perfect} / ${this.botStats.miss}`;
+
+    const delta = pAcc - bAcc;
+    if (this.dom.deltaBadge) {
+      this.dom.deltaBadge.classList.remove('is-rin-lead', 'is-sae-lead', 'is-tie');
+      if (Math.abs(delta) < 0.05) {
+        this.dom.deltaBadge.classList.add('is-tie');
+        this.dom.deltaBadge.textContent = 'НІЧИЯ 0.0%';
+      } else if (delta > 0) {
+        this.dom.deltaBadge.classList.add('is-rin-lead');
+        this.dom.deltaBadge.textContent = `РІН +${delta.toFixed(1)}%`;
+      } else {
+        this.dom.deltaBadge.classList.add('is-sae-lead');
+        this.dom.deltaBadge.textContent = `САЕ +${Math.abs(delta).toFixed(1)}%`;
+      }
+    }
+
+    const doneSteps = Math.max(this.playerCursor, this.botCursor);
+    const pct = Math.min(100, (doneSteps / total) * 100);
+    if (this.dom.progressFill) this.dom.progressFill.style.width = `${pct.toFixed(1)}%`;
+    if (this.dom.stepLabel) this.dom.stepLabel.textContent = `КРОК ${Math.min(doneSteps, total)} / ${total}`;
   }
 
-  stepPhysics(dt) {
-    this.simTime += dt;
-
-    // Move GK
-    this.gk.x += this.gk.speed * this.gk.dir * dt;
-    if (this.gk.x > this.gk.maxX) { this.gk.x = this.gk.maxX; this.gk.dir = -1; }
-    if (this.gk.x < this.gk.minX) { this.gk.x = this.gk.minX; this.gk.dir = 1; }
-
-    // Move Defenders
-    for (const d of this.defenders) {
-      d.x = d.baseX + Math.sin(this.simTime * d.freq + d.phase) * d.amp;
+  finishDuel() {
+    this.state = 'finished';
+    if (this.dom.startBtn) {
+      this.dom.startBtn.textContent = '↻ ЗІГРАТИ ЩЕ РАЗ [ПРОБІЛ]';
+      this.dom.startBtn.classList.remove('is-armed');
     }
 
-    // Banner & particles
-    if (this.banner) {
-      this.banner.timer -= dt;
-      if (this.banner.timer <= 0) this.banner = null;
+    const pAcc = this.getAccuracy(this.playerStats);
+    const bAcc = this.getAccuracy(this.botStats);
+    const won = pAcc > bAcc + 0.05;
+    const tie = Math.abs(pAcc - bAcc) <= 0.05;
+
+    if (won || tie) {
+      this.sfx?.playVictory?.();
     }
-    this.particles = this.particles.filter((p) => {
+
+    if (this.dom.verdictKicker) {
+      this.dom.verdictKicker.textContent = won
+        ? '// BLUE LOCK OVERRIDE · ПЕРЕМОГА РІНА'
+        : (tie ? '// EQUILIBRIUM · ІДЕАЛЬНИЙ ПАРИТЕТ' : '// NEW GEN WORLD XI DOMINANCE');
+    }
+    if (this.dom.verdictTitle) {
+      this.dom.verdictTitle.textContent = won
+        ? 'ТИ ПЕРЕГРАВ ІТОШІ САЕ ЗА ТОЧНІСТЮ!'
+        : (tie ? 'АБСОЛЮТНА НІЧИЯ БРАТІВ!' : 'ІТОШІ САЕ ТРИМАЄ ВИЩУ ТОЧНІСТЬ');
+    }
+    if (this.dom.verdictQuote) {
+      this.dom.verdictQuote.textContent = won
+        ? '«Непогано, Ріне… ти нарешті бачиш ритм гри, не прив’язаний до моєї тіні.»'
+        : (tie
+          ? '«Рівні цифри на табло? Тоді в наступному підході я підніму темп ще вище.»'
+          : '«Занадто шумно й нерівно. Підтягни таймінг, якщо хочеш знищити мене на полі U-20.»');
+    }
+    if (this.dom.verdictPlayerAcc) this.dom.verdictPlayerAcc.textContent = `${pAcc.toFixed(1)}%`;
+    if (this.dom.verdictBotAcc) this.dom.verdictBotAcc.textContent = `${bAcc.toFixed(1)}%`;
+    if (this.dom.verdictPlayerDetail) {
+      this.dom.verdictPlayerDetail.textContent = `${this.playerStats.perfect} ідеал · ${this.playerStats.good} добре · макс комбо ${this.playerStats.maxCombo}x`;
+    }
+    if (this.dom.verdictBotDetail) {
+      this.dom.verdictBotDetail.textContent = `${this.botStats.perfect} ідеал · ${this.botStats.good} добре · макс комбо ${this.botStats.maxCombo}x`;
+    }
+
+    if (this.dom.verdictOverlay) this.dom.verdictOverlay.hidden = false;
+    this.syncHud();
+  }
+
+  update(now, dt) {
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      p.vx *= 0.96;
-      p.vy *= 0.96;
       p.life -= dt;
-      return p.life > 0;
-    });
-    this.shockwaves = this.shockwaves.filter((s) => {
-      s.r += 260 * dt;
-      s.alpha -= 1.8 * dt;
-      return s.alpha > 0;
-    });
+      if (p.life <= 0) this.particles.splice(i, 1);
+    }
+    for (let i = this.popups.length - 1; i >= 0; i--) {
+      const pop = this.popups[i];
+      pop.y -= 28 * dt;
+      pop.life -= dt;
+      if (pop.life <= 0) this.popups.splice(i, 1);
+    }
 
-    if (!this.ball.inFlight || this.ball.resultHandled) return;
+    if (this.state === 'countdown' || this.state === 'playing') {
+      const elapsedMs = now - this.startPerfMs;
 
-    // Sub-steps for accurate collisions
-    const steps = 3;
-    const subDt = dt / steps;
-    const spinAccel = this.ball.spin * (this.flowActive ? 14.2 : 11.4);
+      const beatIdx = Math.floor(elapsedMs / this.chart.beatMs);
+      if (beatIdx > this.lastBeatTickIndex) {
+        this.lastBeatTickIndex = beatIdx;
+        this.sfx?.playBeatTick?.(beatIdx < 4 || beatIdx % 4 === 0);
+      }
 
-    for (let s = 0; s < steps; s++) {
-      // Perpendicular Magnus acceleration relative to velocity vector
-      const spd = Math.hypot(this.ball.vx, this.ball.vy) || 1;
-      const nx = -this.ball.vy / spd;
-      const ny = this.ball.vx / spd;
-      this.ball.vx += nx * spinAccel * subDt;
-      this.ball.vy += ny * spinAccel * subDt;
-
-      // Air drag
-      const drag = Math.pow(0.992, subDt * 60);
-      this.ball.vx *= drag;
-      this.ball.vy *= drag;
-
-      this.ball.x += this.ball.vx * subDt;
-      this.ball.y += this.ball.vy * subDt;
-      this.ball.rotAngle += this.ball.spin * 0.14 * subDt;
-
-      // Pass Target Zone Bonus (Stage 02 / Flow / Endless)
-      if (this.passZone && !this.ball.hitTargetZone) {
-        if (Math.hypot(this.ball.x - this.passZone.x, this.ball.y - this.passZone.y) <= this.passZone.r + this.ball.radius) {
-          this.ball.hitTargetZone = true;
-          this.spawnExplosion(this.passZone.x, this.passZone.y, '#00e5c3', 18);
-          this.resolveRound(true, 260, 'ІДЕАЛЬНИЙ ПРОСТРІЛ!', 'М’яч розрізав пресинг прямо у вікно атаки', '#00e5c3');
-          return;
+      if (this.state === 'countdown' && elapsedMs >= this.chart.countInMs - this.chart.diff.hitWindowMs) {
+        this.state = 'playing';
+        if (this.dom.overlayHint) {
+          this.dom.overlayHint.textContent = 'РУХ! W (▲) · S (▼) · A (◀) · D (▶) — ТРИМАЙ РИТМ ТОЧНІШЕ ЗА САЕ';
         }
       }
 
-      // Goal Net Check
-      if (
-        this.ball.y <= this.goalY &&
-        this.ball.y >= this.goalY - this.netDepth - 8 &&
-        this.ball.x >= this.goalLeft + this.ball.radius &&
-        this.ball.x <= this.goalRight - this.ball.radius
+      while (
+        this.playerCursor < this.chart.steps.length &&
+        elapsedMs > this.chart.steps[this.playerCursor].targetMs + this.chart.diff.hitWindowMs
       ) {
-        const cornerDist = Math.min(this.ball.x - this.goalLeft, this.goalRight - this.ball.x);
-        const isTopCorner = cornerDist < 68;
-        this.resolveRound(
-          true,
-          isTopCorner ? 300 : 200,
-          isTopCorner ? 'ШЕДЕВР У ДЕВ’ЯТКУ!' : 'ГОЛ RE AL № 10!',
-          isTopCorner ? 'Траєкторія ідеально лягла під саму стійку' : 'Воротар безсилий проти підкрутки Сае',
-          '#eab308'
-        );
-        return;
+        const missedStep = this.chart.steps[this.playerCursor];
+        this.judgePlayerStep(missedStep, 'miss', elapsedMs, 'МІМО!');
       }
 
-      // Goal Posts Bounce
-      const posts = [{ x: this.goalLeft, y: this.goalY }, { x: this.goalRight, y: this.goalY }];
-      for (const post of posts) {
-        const dx = this.ball.x - post.x;
-        const dy = this.ball.y - post.y;
-        const dist = Math.hypot(dx, dy);
-        if (dist < this.ball.radius + 7 && dist > 0) {
-          const ux = dx / dist;
-          const uy = dy / dist;
-          const dot = this.ball.vx * ux + this.ball.vy * uy;
-          this.ball.vx -= 1.8 * dot * ux;
-          this.ball.vy -= 1.8 * dot * uy;
-          this.ball.x = post.x + ux * (this.ball.radius + 8);
-          this.ball.y = post.y + uy * (this.ball.radius + 8);
-        }
-      }
-
-      // GK Interception (Flow empowers shot to curve past near edges more forgivingly)
-      const gkHalfW = this.gk.w * 0.5;
-      const gkHalfH = this.gk.h * 0.5;
-      if (
-        Math.abs(this.ball.x - this.gk.x) < gkHalfW + this.ball.radius * 0.85 &&
-        Math.abs(this.ball.y - this.gk.y) < gkHalfH + this.ball.radius * 0.85
+      while (
+        this.botCursor < this.botPlan.length &&
+        elapsedMs >= this.botPlan[this.botCursor].triggerMs
       ) {
-        this.resolveRound(false, 0, 'СЕЙВ ВОРОТАРЯ', 'Закрути сильніше у вільний кут', '#ff2a5f');
-        return;
+        this.triggerBotStep(this.botPlan[this.botCursor]);
       }
 
-      // Defenders Interception
-      for (const d of this.defenders) {
-        if (Math.hypot(this.ball.x - d.x, this.ball.y - d.y) < d.r + this.ball.radius - 2) {
-          this.resolveRound(false, 0, 'ПЕРЕХОПЛЕННЯ ЗАХИСТОМ', 'Обігни стінку тривелою або зміни кут', '#ff2a5f');
-          return;
-        }
-      }
-
-      // Out of Bounds / Stopped
       if (
-        this.ball.x < -25 || this.ball.x > this.W + 25 ||
-        this.ball.y < -30 || this.ball.y > this.H + 30 ||
-        spd < 42
+        this.playerCursor >= this.chart.steps.length &&
+        this.botCursor >= this.botPlan.length
       ) {
-        this.resolveRound(false, 0, 'МІМО СТВОРУ', 'Спробуй скоригувати силу та обертання RPM', '#94a3b8');
-        return;
+        this.finishDuel();
       }
     }
 
-    this.ball.trail.push({ x: this.ball.x, y: this.ball.y });
-    if (this.ball.trail.length > 34) this.ball.trail.shift();
+    const pPivot = this.chart.tiles[Math.min(this.playerCursor, this.chart.tiles.length - 1)];
+    const bPivot = this.chart.tiles[Math.min(this.botCursor, this.chart.tiles.length - 1)];
+    const camLerp = 1 - Math.exp(-10 * dt);
+    this.playerCam.x += (pPivot.x - this.playerCam.x) * camLerp;
+    this.playerCam.y += (pPivot.y - this.playerCam.y) * camLerp;
+    this.botCam.x += (bPivot.x - this.botCam.x) * camLerp;
+    this.botCam.y += (bPivot.y - this.botCam.y) * camLerp;
   }
 
-  predictTrajectory() {
-    const speedScale = this.flowActive ? 1140 : 940;
-    const mag = Math.max(0.14, this.dragPull.powerPct / 100);
-    const pullLen = Math.hypot(this.dragPull.dx, this.dragPull.dy) || 1;
-    let vx = (-this.dragPull.dx / pullLen) * speedScale * mag;
-    let vy = (-this.dragPull.dy / pullLen) * speedScale * mag;
-    let px = this.ball.x;
-    let py = this.ball.y;
-    const spinAccel = this.currentSpin * (this.flowActive ? 14.2 : 11.4);
-    const pts = [];
-    const dt = 0.032;
-
-    for (let i = 0; i < 20; i++) {
-      const spd = Math.hypot(vx, vy) || 1;
-      vx += (-vy / spd) * spinAccel * dt;
-      vy += (vx / spd) * spinAccel * dt;
-      px += vx * dt;
-      py += vy * dt;
-      if (px < 12 || px > this.W - 12 || py < 12 || py > this.H - 12) break;
-      pts.push({ x: px, y: py });
+  getPlanetAngle(cursor, elapsedMs, segStartOverride = null) {
+    const steps = this.chart.steps;
+    if (cursor >= steps.length) {
+      return steps[steps.length - 1].outAngle;
     }
-    return pts;
+    const step = steps[cursor];
+    if (this.state === 'idle' || this.state === 'finished') {
+      return step.fromAngle;
+    }
+
+    if (cursor === 0) {
+      const remainingMs = step.targetMs - elapsedMs;
+      const radPerMs = Math.PI / this.chart.beatMs;
+      return step.outAngle - step.cw * remainingMs * radPerMs;
+    }
+
+    const segStart = segStartOverride ?? steps[cursor - 1].targetMs;
+    const totalDur = Math.max(40, step.targetMs - segStart);
+    const prog = Math.max(0, Math.min(1.25, (elapsedMs - segStart) / totalDur));
+    return step.fromAngle + step.sweep * prog;
   }
 
-  drawPitch() {
+  drawLane(opts) {
+    const { laneKey, topY, height, cam, cursor, planetAngle, elapsedMs, theme } = opts;
     const ctx = this.ctx;
-    ctx.fillStyle = this.flowActive ? '#0c0512' : '#06090e';
-    ctx.fillRect(0, 0, this.W, this.H);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, topY, this.W, height);
+    ctx.clip();
 
-    // Subtle pitch grid
-    ctx.strokeStyle = this.flowActive ? 'rgba(255, 42, 95, 0.12)' : 'rgba(0, 229, 195, 0.08)';
+    const bg = ctx.createLinearGradient(0, topY, 0, topY + height);
+    bg.addColorStop(0, theme.bgTop);
+    bg.addColorStop(1, theme.bgBottom);
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, topY, this.W, height);
+
+    const centerX = this.W * 0.36;
+    const centerY = topY + height * 0.54;
+    const offsetX = centerX - cam.x;
+    const offsetY = centerY - cam.y;
+
+    ctx.strokeStyle = theme.gridColor;
     ctx.lineWidth = 1;
-    for (let x = 0; x <= this.W; x += 60) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, this.H); ctx.stroke();
-    }
-    for (let y = 0; y <= this.H; y += 60) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(this.W, y); ctx.stroke();
-    }
-
-    // Floating mathematical numbers on pitch in Flow
-    if (this.flowActive) {
-      ctx.font = '700 13px "Exo 2", sans-serif';
-      ctx.fillStyle = 'rgba(0, 229, 195, 0.22)';
-      this.formulas.forEach((f, idx) => {
-        const fx = 90 + ((idx * 175 + Math.sin(this.simTime + idx) * 28) % 900);
-        const fy = 150 + ((idx * 95) % 450);
-        ctx.fillText(f, fx, fy);
-      });
-    }
-
-    // Penalty Box & Touchlines
-    ctx.strokeStyle = 'rgba(234, 179, 8, 0.25)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(24, this.goalY, this.W - 48, this.H - this.goalY - 24);
-    ctx.strokeRect(this.W * 0.5 - 270, this.goalY, 540, 220);
-
-    // Goal Net
-    ctx.fillStyle = 'rgba(225, 29, 72, 0.14)';
-    ctx.fillRect(this.goalLeft, this.goalY - this.netDepth, this.goalW, this.netDepth);
-    ctx.strokeStyle = '#f8fafc';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(this.goalLeft, this.goalY - this.netDepth, this.goalW, this.netDepth);
-  }
-
-  drawEntities() {
-    const ctx = this.ctx;
-
-    // Pass Target Zone
-    if (this.passZone) {
-      const pulse = 1 + 0.08 * Math.sin(this.simTime * 5);
-      ctx.save();
+    const stepGrid = this.tileSize;
+    const startGx = Math.floor(-offsetX / stepGrid) * stepGrid + offsetX;
+    const startGy = Math.floor((topY - offsetY) / stepGrid) * stepGrid + offsetY;
+    for (let x = startGx; x < this.W; x += stepGrid) {
       ctx.beginPath();
-      ctx.arc(this.passZone.x, this.passZone.y, this.passZone.r * pulse, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(0, 229, 195, 0.14)';
-      ctx.fill();
-      ctx.lineWidth = 2;
-      ctx.setLineDash([6, 5]);
-      ctx.strokeStyle = '#00e5c3';
+      ctx.moveTo(x, topY);
+      ctx.lineTo(x, topY + height);
       ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.font = '800 11px "Exo 2", sans-serif';
-      ctx.fillStyle = '#99f6e4';
-      ctx.textAlign = 'center';
-      ctx.fillText(this.passZone.label, this.passZone.x, this.passZone.y - this.passZone.r - 10);
+    }
+    for (let y = startGy; y < topY + height; y += stepGrid) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(this.W, y);
+      ctx.stroke();
+    }
+
+    ctx.save();
+    ctx.translate(offsetX, offsetY);
+
+    const tiles = this.chart.tiles;
+    ctx.beginPath();
+    for (let i = 0; i < tiles.length; i++) {
+      if (i === 0) ctx.moveTo(tiles[i].x, tiles[i].y);
+      else ctx.lineTo(tiles[i].x, tiles[i].y);
+    }
+    ctx.strokeStyle = theme.connectorColor;
+    ctx.lineWidth = 16;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    for (let i = 0; i < tiles.length; i++) {
+      const tile = tiles[i];
+      if (Math.abs(tile.x + offsetX - centerX) > 780) continue;
+
+      const isPivot = i === cursor;
+      const isNextTarget = i === cursor + 1;
+      const isDone = i < cursor;
+      const stepForTile = i > 0 ? this.chart.steps[i - 1] : null;
+
+      ctx.save();
+      ctx.translate(tile.x, tile.y);
+
+      const boxSize = isNextTarget ? 54 : (isPivot ? 50 : 44);
+      const half = boxSize / 2;
+
+      ctx.fillStyle = isDone
+        ? theme.tileDoneFill
+        : (isNextTarget ? theme.tileTargetFill : (isPivot ? theme.tilePivotFill : theme.tileIdleFill));
+      ctx.strokeStyle = isDone
+        ? theme.tileDoneStroke
+        : (isNextTarget ? theme.tileTargetStroke : (isPivot ? theme.tilePivotStroke : theme.tileIdleStroke));
+      ctx.lineWidth = isNextTarget ? 3 : 2;
+
+      ctx.beginPath();
+      ctx.roundRect(-half, -half, boxSize, boxSize, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      if (isNextTarget && (this.state === 'playing' || this.state === 'countdown') && stepForTile) {
+        const timeLeft = stepForTile.targetMs - elapsedMs;
+        const windowNorm = Math.max(0, Math.min(1, timeLeft / (this.chart.beatMs * 1.15)));
+        const ringR = 26 + windowNorm * 32;
+        ctx.beginPath();
+        ctx.arc(0, 0, ringR, 0, Math.PI * 2);
+        ctx.strokeStyle = timeLeft < this.chart.diff.perfectMs && timeLeft > -this.chart.diff.perfectMs
+          ? '#ffffff'
+          : theme.planetB;
+        ctx.lineWidth = 2.5;
+        ctx.globalAlpha = 0.78;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+
+      if (i > cursor && i <= cursor + 10 && stepForTile) {
+        ctx.fillStyle = isNextTarget ? '#ffffff' : 'rgba(241, 245, 249, 0.78)';
+        ctx.font = isNextTarget ? '900 19px "Orbitron", sans-serif' : '700 15px "Orbitron", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(stepForTile.dir, 0, 1);
+      } else if (i === tiles.length - 1) {
+        ctx.fillStyle = '#eab308';
+        ctx.font = '800 13px "Exo 2", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('★', 0, 1);
+      }
+
       ctx.restore();
     }
 
-    // GK
-    ctx.fillStyle = '#eab308';
-    ctx.fillRect(this.gk.x - this.gk.w / 2, this.gk.y - this.gk.h / 2, this.gk.w, this.gk.h);
-    ctx.strokeStyle = '#060409';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(this.gk.x - this.gk.w / 2, this.gk.y - this.gk.h / 2, this.gk.w, this.gk.h);
+    const pivot = tiles[Math.min(cursor, tiles.length - 1)];
+    const orbX = pivot.x + Math.cos(planetAngle) * this.planetDist;
+    const orbY = pivot.y + Math.sin(planetAngle) * this.planetDist;
 
-    // Defenders
-    for (const d of this.defenders) {
-      ctx.beginPath();
-      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-      ctx.fillStyle = '#1e293b';
-      ctx.fill();
-      ctx.lineWidth = 2.5;
-      ctx.strokeStyle = '#ff2a5f';
-      ctx.stroke();
-      ctx.font = '700 10px "Exo 2", sans-serif';
-      ctx.fillStyle = '#f8fafc';
-      ctx.textAlign = 'center';
-      ctx.fillText(d.label, d.x, d.y + 4);
-    }
-
-    // Drag Aiming Ring + Trajectory Preview (CLAMPED cleanly inside canvas!)
-    if (this.isDragging && this.dragPull.powerPct > 0) {
-      const pts = this.predictTrajectory();
-      pts.forEach((p, i) => {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, Math.max(2, 4.5 - i * 0.14), 0, Math.PI * 2);
-        ctx.fillStyle = this.flowActive
-          ? `rgba(0, 229, 195, ${0.85 - i * 0.035})`
-          : `rgba(234, 179, 8, ${0.85 - i * 0.035})`;
-        ctx.fill();
-      });
-
-      const hx = Math.max(28, Math.min(this.W - 28, this.ball.x + this.dragPull.dx));
-      const hy = Math.max(28, Math.min(this.H - 28, this.ball.y + this.dragPull.dy));
-
-      ctx.strokeStyle = '#00e5c3';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.moveTo(this.ball.x, this.ball.y);
-      ctx.lineTo(hx, hy);
-      ctx.stroke();
-
-      // Clamped Handle Circle
-      ctx.beginPath();
-      ctx.arc(hx, hy, 12, 0, Math.PI * 2);
-      ctx.fillStyle = this.dragPull.powerPct >= 95 ? '#ff2a5f' : '#00e5c3';
-      ctx.fill();
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // Power Pill inside safe canvas viewport margin
-      const labelX = Math.max(76, Math.min(this.W - 76, hx));
-      const labelY = hy > this.H - 58 ? hy - 26 : hy + 28;
-      ctx.fillStyle = 'rgba(8, 5, 12, 0.92)';
-      ctx.fillRect(labelX - 56, labelY - 12, 112, 22);
-      ctx.strokeStyle = '#eab308';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(labelX - 56, labelY - 12, 112, 22);
-      ctx.font = '800 12px "Exo 2", sans-serif';
-      ctx.fillStyle = '#fef08a';
-      ctx.textAlign = 'center';
-      ctx.fillText(`СИЛА: ${this.dragPull.powerPct}%`, labelX, labelY + 3);
-    }
-
-    // Ball Trail
-    for (let i = 1; i < this.ball.trail.length; i++) {
-      const p0 = this.ball.trail[i - 1];
-      const p1 = this.ball.trail[i];
-      const t = i / this.ball.trail.length;
-      ctx.strokeStyle = this.flowActive
-        ? `rgba(255, 42, 95, ${t * 0.85})`
-        : `rgba(0, 229, 195, ${t * 0.78})`;
-      ctx.lineWidth = 2 + t * 8;
-      ctx.beginPath();
-      ctx.moveTo(p0.x, p0.y);
-      ctx.lineTo(p1.x, p1.y);
-      ctx.stroke();
-    }
-
-    // Ball
-    ctx.save();
-    ctx.translate(this.ball.x, this.ball.y);
-    ctx.rotate(this.ball.rotAngle);
     ctx.beginPath();
-    ctx.arc(0, 0, this.ball.radius, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
-    ctx.fill();
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = this.flowActive ? '#ff2a5f' : '#00e5c3';
+    ctx.arc(pivot.x, pivot.y, this.planetDist, 0, Math.PI * 2);
+    ctx.strokeStyle = theme.orbitGuide;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 6]);
     ctx.stroke();
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(-4, -4, 8, 8);
-    ctx.restore();
+    ctx.setLineDash([]);
 
-    // Shockwaves & Particles
-    for (const sw of this.shockwaves) {
-      ctx.beginPath();
-      ctx.arc(sw.x, sw.y, sw.r, 0, Math.PI * 2);
-      ctx.strokeStyle = sw.color;
-      ctx.globalAlpha = Math.max(0, sw.alpha);
-      ctx.lineWidth = 2.5;
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
+    ctx.beginPath();
+    ctx.moveTo(pivot.x, pivot.y);
+    ctx.lineTo(orbX, orbY);
+    ctx.strokeStyle = theme.beamColor;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(pivot.x, pivot.y, 13, 0, Math.PI * 2);
+    ctx.fillStyle = theme.planetA;
+    ctx.shadowColor = theme.planetA;
+    ctx.shadowBlur = 16;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    ctx.beginPath();
+    ctx.arc(orbX, orbY, 13, 0, Math.PI * 2);
+    ctx.fillStyle = theme.planetB;
+    ctx.shadowColor = theme.planetB;
+    ctx.shadowBlur = 18;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
     for (const p of this.particles) {
+      if (p.lane !== laneKey) continue;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
       ctx.fillStyle = p.color;
@@ -899,29 +1063,164 @@ class SaePlaymakerArena {
       ctx.globalAlpha = 1;
     }
 
-    // Result Banner
-    if (this.banner) {
-      ctx.fillStyle = 'rgba(8, 5, 12, 0.9)';
-      ctx.fillRect(this.W / 2 - 220, this.H / 2 - 44, 440, 88);
-      ctx.strokeStyle = this.banner.color;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(this.W / 2 - 220, this.H / 2 - 44, 440, 88);
+    for (const pop of this.popups) {
+      if (pop.lane !== laneKey) continue;
+      ctx.globalAlpha = Math.max(0, pop.life / pop.maxLife);
+      ctx.font = '800 15px "Exo 2", sans-serif';
       ctx.textAlign = 'center';
-      ctx.font = '800 22px "Unbounded", sans-serif';
-      ctx.fillStyle = this.banner.color;
-      ctx.fillText(this.banner.title, this.W / 2, this.H / 2 - 4);
-      ctx.font = '600 13px "Exo 2", sans-serif';
-      ctx.fillStyle = '#e2e8f0';
-      ctx.fillText(this.banner.sub, this.W / 2, this.H / 2 + 24);
+      ctx.fillStyle = pop.color;
+      ctx.fillText(pop.text, pop.x, pop.y);
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(6, 4, 12, 0.78)';
+    ctx.beginPath();
+    ctx.roundRect(14, topY + 10, 340, 32, 6);
+    ctx.fill();
+    ctx.strokeStyle = theme.badgeStroke;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.font = '800 12px "Exo 2", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = theme.badgeText;
+    ctx.fillText(theme.laneTitle, 26, topY + 26);
+
+    if (laneKey === 'bot' && this.botKeyFlash.until > performance.now() && this.botKeyFlash.key) {
+      ctx.fillStyle = 'rgba(225, 29, 72, 0.85)';
+      ctx.beginPath();
+      ctx.roundRect(this.W - 148, topY + 10, 132, 32, 6);
+      ctx.fill();
+      ctx.fillStyle = '#fef3c7';
+      ctx.font = '800 12px "Exo 2", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`САЕ НАТИСНУВ: ${this.botKeyFlash.key}`, this.W - 82, topY + 26);
+    }
+
+    ctx.restore();
+  }
+
+  drawFrame(now) {
+    if (!this.ctx) return;
+    const ctx = this.ctx;
+    ctx.clearRect(0, 0, this.W, this.H);
+
+    const elapsedMs = (this.state === 'playing' || this.state === 'countdown')
+      ? now - this.startPerfMs
+      : 0;
+
+    const pAngle = this.getPlanetAngle(
+      this.playerCursor,
+      elapsedMs,
+      this.playerCursor > 0 ? this.playerVisualSegStart : null
+    );
+    const bSegStart = this.botCursor > 0 ? this.botPlan[this.botCursor - 1]?.triggerMs : null;
+    const bAngle = this.getPlanetAngle(this.botCursor, elapsedMs, bSegStart);
+
+    this.drawLane({
+      laneKey: 'top',
+      topY: 0,
+      height: this.laneHeight,
+      cam: this.playerCam,
+      cursor: this.playerCursor,
+      planetAngle: pAngle,
+      elapsedMs,
+      theme: {
+        bgTop: '#04121b',
+        bgBottom: '#071b26',
+        gridColor: 'rgba(0, 229, 195, 0.08)',
+        connectorColor: 'rgba(0, 229, 195, 0.22)',
+        tileDoneFill: 'rgba(0, 229, 195, 0.2)',
+        tileDoneStroke: 'rgba(0, 229, 195, 0.55)',
+        tilePivotFill: 'rgba(0, 229, 195, 0.35)',
+        tilePivotStroke: '#00ffc8',
+        tileTargetFill: 'rgba(34, 211, 238, 0.3)',
+        tileTargetStroke: '#ffffff',
+        tileIdleFill: 'rgba(15, 23, 42, 0.85)',
+        tileIdleStroke: 'rgba(56, 189, 248, 0.45)',
+        orbitGuide: 'rgba(34, 211, 238, 0.28)',
+        beamColor: 'rgba(0, 255, 200, 0.55)',
+        planetA: '#00ffc8',
+        planetB: '#38bdf8',
+        badgeStroke: 'rgba(0, 229, 195, 0.55)',
+        badgeText: '#00ffc8',
+        laneTitle: 'BLUE LOCK XI #10 · ІТОШІ РІН (ТИ // WSDA)'
+      }
+    });
+
+    const divGrad = ctx.createLinearGradient(0, 0, this.W, 0);
+    divGrad.addColorStop(0, '#00e5c3');
+    divGrad.addColorStop(0.5, '#eab308');
+    divGrad.addColorStop(1, '#ff2a5f');
+    ctx.fillStyle = '#09060f';
+    ctx.fillRect(0, this.laneHeight, this.W, 12);
+    ctx.fillStyle = divGrad;
+    ctx.fillRect(0, this.laneHeight + 4, this.W, 4);
+
+    this.drawLane({
+      laneKey: 'bot',
+      topY: this.laneHeight + 12,
+      height: this.H - (this.laneHeight + 12),
+      cam: this.botCam,
+      cursor: this.botCursor,
+      planetAngle: bAngle,
+      elapsedMs,
+      theme: {
+        bgTop: '#16060d',
+        bgBottom: '#1f0914',
+        gridColor: 'rgba(255, 42, 95, 0.09)',
+        connectorColor: 'rgba(234, 179, 8, 0.22)',
+        tileDoneFill: 'rgba(255, 42, 95, 0.22)',
+        tileDoneStroke: 'rgba(234, 179, 8, 0.6)',
+        tilePivotFill: 'rgba(255, 42, 95, 0.38)',
+        tilePivotStroke: '#eab308',
+        tileTargetFill: 'rgba(234, 179, 8, 0.28)',
+        tileTargetStroke: '#ffffff',
+        tileIdleFill: 'rgba(24, 10, 18, 0.88)',
+        tileIdleStroke: 'rgba(255, 42, 95, 0.48)',
+        orbitGuide: 'rgba(234, 179, 8, 0.28)',
+        beamColor: 'rgba(255, 42, 95, 0.58)',
+        planetA: '#ff2a5f',
+        planetB: '#eab308',
+        badgeStroke: 'rgba(255, 42, 95, 0.6)',
+        badgeText: '#fda4af',
+        laneTitle: 'JAPAN U-20 #10 · БОТ ІТОШІ САЕ (LIVE AI)'
+      }
+    });
+
+    if (this.state === 'countdown') {
+      const beatProgress = Math.floor(elapsedMs / this.chart.beatMs);
+      const countText = beatProgress < 3 ? String(3 - beatProgress) : 'ГОУ!';
+      ctx.save();
+      ctx.fillStyle = 'rgba(6, 4, 12, 0.72)';
+      ctx.beginPath();
+      ctx.roundRect(this.W / 2 - 90, this.laneHeight - 30, 180, 72, 12);
+      ctx.fill();
+      ctx.strokeStyle = '#eab308';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.font = '900 34px "Orbitron", sans-serif';
+      ctx.fillStyle = beatProgress >= 3 ? '#00ffc8' : '#eab308';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(countText, this.W / 2, this.laneHeight + 6);
+      ctx.restore();
     }
   }
 
-  loop(now) {
-    const dt = Math.min(0.05, Math.max(0.001, (now - this.lastFrame) / 1000));
-    this.lastFrame = now;
-    this.stepPhysics(dt);
-    this.drawPitch();
-    this.drawEntities();
-    requestAnimationFrame((t) => this.loop(t));
+  startLoop() {
+    let last = performance.now();
+    const tick = (now) => {
+      const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000));
+      last = now;
+      this.update(now, dt);
+      this.drawFrame(now);
+      this.rafId = requestAnimationFrame(tick);
+    };
+    this.rafId = requestAnimationFrame(tick);
   }
 }
