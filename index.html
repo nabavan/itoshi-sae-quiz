@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>ITOSHI SAE // Re Al &amp; New Gen World XI Tactical Archive</title>
+  <link rel="icon" type="image/webp" href="assets/sae_avatar_icon.webp">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,600;1,700&family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+JP:wght@700;900&family=Russo+One&family=Unbounded:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css?v=20261114_sae1">
+</head>
+<body class="sae-theme">
+  <!-- Background Ambience, Numerical Formulas & Metavision Grid -->
+  <div class="bg-grid" aria-hidden="true"></div>
+  <canvas id="saeAmbientCanvas" aria-hidden="true"></canvas>
+  <div class="bg-glow glow-crimson" aria-hidden="true"></div>
+  <div class="bg-glow glow-gold" aria-hidden="true"></div>
+  <div class="bg-glow glow-teal" aria-hidden="true"></div>
+  <div class="vignette-overlay" aria-hidden="true"></div>
+
+  <!-- NAVIGATION HEADER -->
+  <header class="navbar-hud">
+    <div class="nav-brand">
+      <button type="button" id="saeEmblemBtn" class="brand-logo-hex" title="Активувати Flow: Прекрасне руйнування // Перемкнути ауру й музичну тему" aria-pressed="false" aria-label="Перемкнути режим Flow Прекрасне руйнування та музичну тему">
+        <span class="hex-inner">冴</span>
+      </button>
+      <button type="button" id="brandHomeBtn" class="brand-home-btn" title="Повернутися на Головну">
+        <span class="brand-text-wrap">
+          <span class="brand-main">ITOSHI SAE</span>
+          <span class="brand-sub" id="brandSubText">糸師 冴 // RE AL · № 10</span>
+        </span>
+      </button>
+    </div>
+
+    <nav class="nav-menu" aria-label="Головна навігація">
+      <button type="button" class="nav-link active" data-target="heroSection">ГОЛОВНА</button>
+      <button type="button" class="nav-link" data-target="dossierSection">ДОСЬЄ</button>
+      <button type="button" class="nav-link" data-target="weaponsSection">ЗБРОЯ &amp; FLOW</button>
+      <button type="button" class="nav-link" data-target="timelineSection">ХРОНОЛОГІЯ</button>
+      <button type="button" class="nav-link" data-target="gallerySection">ГАЛЕРЕЯ</button>
+      <button type="button" class="nav-link highlight-call" data-target="callSection">📞 ДЗВІНОК САЕ</button>
+      <button type="button" class="nav-link highlight-game" data-target="gameSection">🎮 МІНІ-ГРА 2D</button>
+      <button type="button" class="nav-link highlight-quiz" data-target="quizContainerSection">🧠 ЕГО-АУДИТ</button>
+    </nav>
+
+    <div class="nav-actions">
+      <button id="bgmToggleBtn" type="button" class="hud-pill-btn bgm-pill-btn" title="Пауза або відновлення фонової музики" aria-pressed="true">
+        <span class="bgm-icon">🎵</span>
+        <span class="bgm-label">ТЕМА: SAE</span>
+      </button>
+      <button id="soundToggleBtn" type="button" class="hud-pill-btn" title="Увімкнути або вимкнути звукові ефекти" aria-pressed="true">
+        <span class="sound-icon">🔊</span>
+        <span class="sound-label">SFX: ON</span>
+      </button>
+    </div>
+  </header>
+
+  <div id="saeHudToast" class="sae-hud-toast" role="status" aria-live="polite" aria-hidden="true"></div>
+
+  <main class="page-container">
+
+    <!-- ========================================================
+         1. HERO SECTION
+         ======================================================== -->
+    <section id="heroSection" class="content-section active">
+      <div class="hero-wrapper">
+        <div class="hero-content">
+          <div class="hero-status-pill">
+            <span class="pulse-dot"></span>
+            NEW GENERATION WORLD XI // RE AL MADRID YOUTH
+          </div>
+
+          <h1 class="hero-title">
+            <span class="hero-kanji">糸師 冴</span>
+            <span class="hero-english">ITOSHI SAE</span>
+          </h1>
+
+          <div class="hero-quote-box">
+            <p class="hero-quote-text">
+              «Тільки ідіот вигадує привід не грати. Тисяча спроб — і лише <em>прекрасне руйнування</em> має значення на полі.»
+            </p>
+            <div class="hero-quote-author">// ІТОШІ САЕ [PREMIER PLAYMAKER // МАТЧ ПРОТИ BLUE LOCK 11]</div>
+          </div>
+
+          <div class="hero-ribbon">
+            <div class="ribbon-item">
+              <span class="ribbon-val">180 CM</span>
+              <span class="ribbon-lbl">ЗРІСТ // КР. А</span>
+            </div>
+            <div class="ribbon-sep">/</div>
+            <div class="ribbon-item">
+              <span class="ribbon-val">№ 10</span>
+              <span class="ribbon-lbl">RE AL · JAPAN U-20</span>
+            </div>
+            <div class="ribbon-sep">/</div>
+            <div class="ribbon-item">
+              <span class="ribbon-val">NEW GEN XI</span>
+              <span class="ribbon-lbl">СВІТОВА ЕЛІТА</span>
+            </div>
+          </div>
+
+          <div class="hero-buttons">
+            <button type="button" class="bl-btn bl-btn-primary" data-jump="gameSection">
+              <span>МІНІ-ГРА 2D // НУЛЬОВИЙ КУТ</span>
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+            </button>
+            <button type="button" class="bl-btn bl-btn-secondary" data-jump="quizContainerSection">
+              <span>ПРОЙТИ ЕГО-АУДИТ</span>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+            </button>
+            <button type="button" class="bl-btn bl-btn-ghost" data-jump="dossierSection">
+              <span>ДОСЬЄ ПЛЕЙМЕЙКЕРА</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="hero-visual">
+          <div class="visual-card-wrap">
+            <div class="visual-aura-ring" aria-hidden="true"></div>
+            <div class="visual-frame">
+              <img src="assets/sae_hero_official.webp" alt="Ітоші Сае — офіційний портрет Blue Lock" class="hero-sae-portrait" decoding="async" fetchpriority="high">
+              <div class="visual-badge">PLAYMAKER // WORLD XI</div>
+              <div class="visual-overlay-scanline" aria-hidden="true"></div>
+              <div class="visual-corner corner-tl" aria-hidden="true"></div>
+              <div class="visual-corner corner-tr" aria-hidden="true"></div>
+              <div class="visual-corner corner-bl" aria-hidden="true"></div>
+              <div class="visual-corner corner-br" aria-hidden="true"></div>
+            </div>
+            <div class="visual-subcard">
+              <div class="subcard-title">«PRECISE PLAYMAKING»</div>
+              <div class="subcard-desc">Я пасую лише туди, де народжується ідеальний гол. Решта — просто марнування траєкторії.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-scroll-cue-wrap">
+        <button type="button" class="hero-scroll-cue" data-scroll-target="heroOverviewBlock">
+          <span>ПРОГОРНИ ВНИЗ // ТАКТИЧНИЙ АРХІВ ТА ІНТЕРАКТИВ</span>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+        </button>
+      </div>
+
+      <div class="hero-extended-flow">
+        <!-- BLOCK 1: ASYMMETRIC OVERVIEW SPLIT -->
+        <section id="heroOverviewBlock" class="hero-detail-band" aria-label="Про сайт">
+          <div class="hero-overview-split">
+            <div class="hero-overview-main reveal-on-scroll reveal-from-left">
+              <div class="section-tag">// RE AL ANALYTICS · ПРО ЦЕЙ АРХІВ</div>
+              <h2 class="section-title">ТАКТИЧНИЙ ТЕРМІНАЛ ПЛЕЙМЕЙКЕРА № 10</h2>
+              <p class="overview-lead">
+                Автономний інтерактивний архів, присвячений Ітоші Сае — гравцю молодіжки іспанського Re Al та представнику New Generation World XI. Тут точна хронологія манги й факти з Egoist Bible поєднані з балістичною 2D-ареною, живим симулятором дзвінка та 20-питальним тестом.
+              </p>
+              <div class="overview-metrics-row">
+                <div class="overview-metric">
+                  <span class="metric-num">20</span>
+                  <span class="metric-lbl">ПИТАНЬ ЕГО-АУДИТУ</span>
+                </div>
+                <div class="overview-metric">
+                  <span class="metric-num">5</span>
+                  <span class="metric-lbl">СЦЕНАРІЇВ 2D-АРЕНИ</span>
+                </div>
+                <div class="overview-metric">
+                  <span class="metric-num">9</span>
+                  <span class="metric-lbl">ЕМОЦІЙ У ДЗВІНКУ</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="hero-overview-side reveal-on-scroll reveal-from-right">
+              <article class="hero-pillar-card">
+                <span class="pillar-index">01 // EGOIST BIBLE CANON</span>
+                <h3 class="pillar-title">Звірена біографія та арки</h3>
+                <p class="pillar-text">Від Камакури й академії Re Al в Іспанії до дуелі U-20 проти Blue Lock 11 та погляду в бік ЧС U-20 — жодної вигадки чи викривлень канону.</p>
+              </article>
+              <article class="hero-pillar-card hero-pillar-card--gold">
+                <span class="pillar-index">02 // DUAL AUDIO &amp; FLOW</span>
+                <h3 class="pillar-title">Математична холодність і Flow</h3>
+                <p class="pillar-text">Натисни на ієрогліф <strong>冴</strong> у лівому верхньому куті шапки, щоб змінити атмосферу сайту й миттєво перейти до інтенсивної теми Flow.</p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <!-- BLOCK 2: NON-MONOTONOUS ASYMMETRIC BENTO SECTORS -->
+        <section class="hero-detail-band" aria-label="Категорії архіву">
+          <div class="section-header hero-band-header reveal-on-scroll">
+            <div class="section-tag">// KNOWLEDGE SECTORS · СЕКТОРИ АРХІВУ</div>
+            <h2 class="section-title">ЩО Є В БАЗІ ДАНИХ САЕ</h2>
+            <p class="section-desc">Обери будь-який сектор для миттєвого переходу до аналізу, кадрів або статистики.</p>
+          </div>
+
+          <div class="hero-bento-grid">
+            <button type="button" class="hero-cat-card bento-wide reveal-on-scroll reveal-from-left" data-jump="dossierSection">
+              <div class="cat-card-top">
+                <span class="cat-badge">СЕКТОР 01 // БІОМЕТРІЯ</span>
+                <span class="cat-arrow">↗</span>
+              </div>
+              <h3 class="cat-title">ДОСЬЄ, ХАРАКТЕР І РАЦІОН EGOIST BIBLE</h3>
+              <p class="cat-desc">180 см, 10 жовтня, група крові A, Камакура, статус у Re Al та New Gen XI, любов до солоного комбу-чаю кобуча й неприязнь до шкідливої картоплі фрі разом із 6-параметровою картою навичок.</p>
+              <span class="cat-meta">Біографія · Атрибути · Профіль</span>
+            </button>
+
+            <button type="button" class="hero-cat-card bento-narrow bento-accent-gold reveal-on-scroll reveal-from-right" data-jump="weaponsSection">
+              <div class="cat-card-top">
+                <span class="cat-badge">СЕКТОР 02 // ТЕХНІКА</span>
+                <span class="cat-arrow">↗</span>
+              </div>
+              <h3 class="cat-title">ЗБРОЯ &amp; ПРЕКРАСНЕ РУЙНУВАННЯ</h3>
+              <p class="cat-desc">Контр-дриблінг, Metavision, Еластіко, удар із нульового кута й математичний стан Flow.</p>
+              <span class="cat-meta">Механіки · Тактичні кадри</span>
+            </button>
+
+            <button type="button" class="hero-cat-card bento-narrow reveal-on-scroll reveal-from-left" data-jump="timelineSection">
+              <div class="cat-card-top">
+                <span class="cat-badge">СЕКТОР 03 // ЛІТОПИС</span>
+                <span class="cat-arrow">↗</span>
+              </div>
+              <h3 class="cat-title">ХРОНОЛОГІЯ ВІД КАМАКУРИ ДО ЧС U-20</h3>
+              <p class="cat-desc">Дитинство з Ріном, зміна позиції в Іспанії, матч U-20 та нові суперники рівня Банні Іґлесіаса й Вів'єна Хьюго.</p>
+              <span class="cat-meta">Фільтри арок · Події манги</span>
+            </button>
+
+            <button type="button" class="hero-cat-card bento-wide bento-accent-teal reveal-on-scroll reveal-from-right" data-jump="gallerySection">
+              <div class="cat-card-top">
+                <span class="cat-badge">СЕКТОР 04 // ВІЗУАЛ</span>
+                <span class="cat-arrow">↗</span>
+              </div>
+              <h3 class="cat-title">ГАЛЕРЕЯ ПЕРЕВІРЕНИХ КАДРІВ АНІМЕ ТА МАНГИ</h3>
+              <p class="cat-desc">20 канонічних сцен від ранніх флешбеків до нульового кута й фінальної дуелі з Ріном — кожен кадр має точний номер розділу й розгорнутий тактичний коментар у лайтбоксі.</p>
+              <span class="cat-meta">Справжні фрейми · Лайтбокс-розбір</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- BLOCK 3: INTERACTIVE MODULES -->
+        <section class="hero-detail-band" aria-label="Інтерактивні режими">
+          <div class="section-header hero-band-header hero-band-header--gold reveal-on-scroll">
+            <div class="section-tag">// INTERACTIVE SIMULATIONS · АКТИВНІ МОДУЛІ</div>
+            <h2 class="section-title">ЩО ЦІКАВОГО ПОРОБИТИ ПРОСТО ЗАРАЗ</h2>
+            <p class="section-desc">Три окремі симуляції: жива розмова 1-на-1, фізична арена пасів/ударів та аудит знань.</p>
+          </div>
+
+          <div class="hero-activities-bento">
+            <div class="hero-activity-featured reveal-on-scroll reveal-scale-up">
+              <div class="featured-act-left">
+                <div class="activity-icon-row">
+                  <span class="activity-icon">📞</span>
+                  <span class="activity-chip">ПІДТРИМКА 9 ЕМОЦІЙ · 1 НА 1</span>
+                </div>
+                <h3 class="activity-title">ПРЯМИЙ ДЗВІНОК ІТОШІ САЕ</h3>
+                <p class="activity-desc">Постав запитання Сае про його перехід у півзахист в Іспанії, ставлення до Ріна, Шідо, Ісагі, Айку, Локі, Кайзера, Банні Іґлесіаса чи Вів'єна Хьюго. Кожна відповідь змінює вираз обличчя та шкалу поваги.</p>
+                <button type="button" class="bl-btn bl-btn-secondary activity-btn-inline" data-jump="callSection">
+                  <span>ВІДКРИТИ ДЗВІНОК САЕ</span>
+                </button>
+              </div>
+              <div class="featured-act-right">
+                <div class="preview-terminal-box">
+                  <div class="preview-terminal-head">ШВИДКІ ТЕМИ РОЗМОВИ</div>
+                  <div class="preview-tags-wrap">
+                    <span class="preview-tag">🇪🇸 Академія Re Al</span>
+                    <span class="preview-tag">⚡ Ітоші Рін</span>
+                    <span class="preview-tag">😈 Шідо Рюсей</span>
+                    <span class="preview-tag">🎯 Ісагі Йоічі</span>
+                    <span class="preview-tag">🏆 Банні Іґлесіас</span>
+                    <span class="preview-tag">♟️ Вів'єн Хьюго</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="hero-activity-card act-wide reveal-on-scroll reveal-from-left">
+              <div class="activity-icon-row">
+                <span class="activity-icon">🎮</span>
+                <span class="activity-chip">2D БАЛІСТИКА · 5 РЕЖИМІВ</span>
+              </div>
+              <h3 class="activity-title">2D АРЕНА: ПІДКРУТКА З НУЛЬОВОГО КУТА ТА ПРОСТРІЛ</h3>
+              <p class="activity-desc">Відтягни м’яч, обери кручення тривелою або закрутку лівою та проведи м’яч крізь коридор пресингу або в дальню дев’ятку воріт.</p>
+              <button type="button" class="bl-btn bl-btn-primary activity-btn" data-jump="gameSection">
+                <span>ЗАПУСТИТИ МІНІ-ГРУ 2D</span>
+              </button>
+            </div>
+
+            <div class="hero-activity-card act-narrow reveal-on-scroll reveal-from-right">
+              <div class="activity-icon-row">
+                <span class="activity-icon">🧠</span>
+                <span class="activity-chip">20 ПИТАНЬ · 4 БЛОКИ</span>
+              </div>
+              <h3 class="activity-title">ЕГО-АУДИТ САЕ</h3>
+              <p class="activity-desc">Чесний тест без підказок у кнопках: від дитинства в Камакурі до психології плеймейкера та нових талантів.</p>
+              <button type="button" class="bl-btn bl-btn-ghost activity-btn" data-jump="quizContainerSection">
+                <span>ПОЧАТИ ТЕСТ</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- BLOCK 4: CLOSING CTA -->
+        <div class="hero-closing-banner reveal-on-scroll reveal-scale-up">
+          <div class="closing-copy">
+            <span class="section-tag">// MATCHDAY BRIEFING</span>
+            <h3 class="closing-title">ПЕРЕВІР СВІЙ ІГРОВИЙ ІНТЕЛЕКТ</h3>
+            <p class="closing-desc">Почни з прямого діалогу з плеймейкером № 10 або випробуй точність траєкторій у 2D-симуляторі.</p>
+          </div>
+          <div class="closing-actions">
+            <button type="button" class="bl-btn bl-btn-primary" data-jump="callSection">
+              <span>📞 ДЗВІНОК САЕ</span>
+            </button>
+            <button type="button" class="bl-btn bl-btn-secondary" data-jump="gameSection">
+              <span>🎮 МІНІ-ГРА 2D</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         2. DOSSIER & BIOMETRICS
+         ======================================================== -->
+    <section id="dossierSection" class="content-section">
+      <div class="section-header reveal-on-scroll">
+        <div class="section-tag">// EGOIST BIBLE &amp; RE AL SCOUTING REPORT</div>
+        <h2 class="section-title">ОФІЦІЙНЕ ДОСЬЄ ПЛЕЙМЕЙКЕРА</h2>
+        <p class="section-desc">Канонічні біометричні параметри, звички з Egoist Bible та тактичний профіль Ітоші Сае.</p>
+      </div>
+
+      <div class="dossier-grid">
+        <div class="dossier-card reveal-on-scroll reveal-from-left">
+          <div class="dossier-avatar-wrap">
+            <img src="assets/sae_avatar_icon.webp" alt="Портрет Ітоші Сае" class="dossier-avatar" loading="lazy" decoding="async">
+            <div class="dossier-avatar-info">
+              <div class="dossier-avatar-name">ІТОШІ САЕ [糸師 冴]</div>
+              <div class="dossier-avatar-tag">NEW GEN WORLD XI // OMF · № 10</div>
+            </div>
+          </div>
+
+          <h3 class="card-title">БІОМЕТРІЯ ТА КАНОНІЧНІ ДАНІ</h3>
+          <ul class="data-list">
+            <li><span class="d-label">Повне ім’я:</span><span class="d-value">Ітоші Сае • 糸師 冴</span></li>
+            <li><span class="d-label">День народження:</span><span class="d-value">10 жовтня • Знак Терези</span></li>
+            <li><span class="d-label">Вік (арка U-20):</span><span class="d-value">18 років</span></li>
+            <li><span class="d-label">Зріст:</span><span class="d-value">180 см (5'11")</span></li>
+            <li><span class="d-label">Група крові:</span><span class="d-value">Група A</span></li>
+            <li><span class="d-label">Рідне місто:</span><span class="d-value">Камакура, префектура Канаґава</span></li>
+            <li><span class="d-label">Клуб:</span><span class="d-value">Re Al Youth (Іспанія)</span></li>
+            <li><span class="d-label">Світовий статус:</span><span class="d-value">New Generation World XI</span></li>
+            <li><span class="d-label">Позиція / Номер:</span><span class="d-value">Атакувальний півзахисник (OMF) • № 10</span></li>
+            <li><span class="d-label">Робоча нога:</span><span class="d-value">Ліва (віртуоз тривели й пасів у дотик)</span></li>
+            <li><span class="d-label">Улюблене (Egoist Bible):</span><span class="d-value">Солоний комбу-чай (кобуча) та рис із солоними водоростями</span></li>
+            <li><span class="d-label">Нелюбе (Egoist Bible):</span><span class="d-value">Картопля фрі («смачна, але страшенно шкідлива»)</span></li>
+          </ul>
+        </div>
+
+        <div class="dossier-card dossier-stats-card reveal-on-scroll reveal-from-right">
+          <h3 class="card-title">РАДАР ТАКТИЧНИХ ПАРАМЕТРІВ</h3>
+          <div class="radar-wrap">
+            <canvas id="saeRadarCanvas" width="340" height="320" aria-label="Шестикутна діаграма навичок Ітоші Сае"></canvas>
+          </div>
+
+          <div class="stats-bars-list">
+            <div class="stat-row">
+              <div class="stat-meta"><span class="stat-name">Пас &amp; Бачення поля (Metavision)</span><span class="stat-num">99 / 100</span></div>
+              <div class="stat-track"><div class="stat-bar" data-width="99"></div></div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-meta"><span class="stat-name">Дріблінг &amp; Пасивне руйнування</span><span class="stat-num">97 / 100</span></div>
+              <div class="stat-track"><div class="stat-bar" data-width="97"></div></div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-meta"><span class="stat-name">Контроль м’яча &amp; Рефлекси</span><span class="stat-num">98 / 100</span></div>
+              <div class="stat-track"><div class="stat-bar" data-width="98"></div></div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-meta"><span class="stat-name">Завершення &amp; Нульовий кут</span><span class="stat-num">93 / 100</span></div>
+              <div class="stat-track"><div class="stat-bar" data-width="93"></div></div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-meta"><span class="stat-name">Швидкість ривка &amp; Зміна темпу</span><span class="stat-num">90 / 100</span></div>
+              <div class="stat-track"><div class="stat-bar" data-width="90"></div></div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-meta"><span class="stat-name">Фізичний баланс &amp; Пресинг-стійкість</span><span class="stat-num">87 / 100</span></div>
+              <div class="stat-track"><div class="stat-bar" data-width="87"></div></div>
+            </div>
+          </div>
+
+          <div class="dossier-sheets-strip">
+            <figure class="dossier-sheet-fig">
+              <img src="assets/sae_anime_u20_sheet.webp" alt="Форма Сае Японія U-20 № 10" loading="lazy" decoding="async">
+              <figcaption>Форма Японія U-20 // № 10</figcaption>
+            </figure>
+            <figure class="dossier-sheet-fig">
+              <img src="assets/sae_anime_casual_sheet.webp" alt="Повсякденний образ Сае" loading="lazy" decoding="async">
+              <figcaption>Поза полем // Football Journal</figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         3. WEAPONS & FLOW
+         ======================================================== -->
+    <section id="weaponsSection" class="content-section">
+      <div class="section-header reveal-on-scroll">
+        <div class="section-tag">// PLAYMAKER SYSTEM · ОЗБРОЄННЯ</div>
+        <h2 class="section-title">ЗБРОЯ ТА СТАН «FLOW»</h2>
+        <p class="section-desc">Обери компонент гри Ітоші Сае, щоб розкрити механіку прийому, статистику ефективності та пов’язані кадри з матчу U-20.</p>
+      </div>
+
+      <div class="weapons-grid">
+        <div class="weapon-card active-weapon" data-weapon-id="counter" role="button" tabindex="0">
+          <div class="weapon-num">WEAPON 01</div>
+          <h3 class="weapon-name">КОНТР-ДРІБЛІНГ ТА ПАСИВНЕ РУЙНУВАННЯ</h3>
+          <p class="weapon-desc">Замість вигадливих фінтів наперед Сае читає момент, коли центр ваги захисника зміщується, і миттєво ламає його рух мінімальним дотиком.</p>
+          <div class="weapon-card-footer">
+            <span class="weapon-badge">DRIBBLE: 97 // S+</span>
+            <span class="weapon-card-action">ДЕТАЛЬНИЙ РОЗБІР ▶</span>
+          </div>
+        </div>
+
+        <div class="weapon-card" data-weapon-id="metavision" role="button" tabindex="0">
+          <div class="weapon-num">WEAPON 02</div>
+          <h3 class="weapon-name">METAVISION ТА МАТЕМАТИЧНИЙ ПАС</h3>
+          <p class="weapon-desc">Безперервне сканування поля на 360° перетворює гравців на векторні траєкторії: ідеальний пас приходить туди, де форвард лише буде через півсекунди.</p>
+          <div class="weapon-card-footer">
+            <span class="weapon-badge">VISION: 99 // WORLD XI</span>
+            <span class="weapon-card-action">ДЕТАЛЬНИЙ РОЗБІР ▶</span>
+          </div>
+        </div>
+
+        <div class="weapon-card" data-weapon-id="trivela" role="button" tabindex="0">
+          <div class="weapon-num">WEAPON 03</div>
+          <h3 class="weapon-name">ЕЛАСТІКО І НУЛЬОВИЙ КУТ</h3>
+          <p class="weapon-desc">Блискавичний подвійний дотик і закрутка зовнішнім або внутрішнім підйомом лівої ноги, здатна завести м’яч у сітку буквально з лінії ауту.</p>
+          <div class="weapon-card-footer">
+            <span class="weapon-badge">CURVE: S+</span>
+            <span class="weapon-card-action">ДЕТАЛЬНИЙ РОЗБІР ▶</span>
+          </div>
+        </div>
+
+        <div class="weapon-card flow-special" data-weapon-id="flow" role="button" tabindex="0">
+          <div class="weapon-num">AWAKENED FLOW</div>
+          <h3 class="weapon-name">ПРЕКРАСНЕ РУЙНУВАННЯ</h3>
+          <p class="weapon-desc">Вир чисел і формул навколо тіла у другому таймі проти Blue Lock 11: Сае випереджає темп кожного захисника ще до початку їхнього кроку.</p>
+          <div class="weapon-card-footer">
+            <span class="weapon-badge badge-crimson">FLOW: BEAUTIFUL DESTRUCTION</span>
+            <span class="weapon-card-action">ДЕТАЛЬНИЙ РОЗБІР ▶</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="weaponDetailPanel" class="weapon-detail-panel reveal-on-scroll"></div>
+    </section>
+
+    <!-- ========================================================
+         4. TIMELINE & CHRONICLE
+         ======================================================== -->
+    <section id="timelineSection" class="content-section">
+      <div class="section-header reveal-on-scroll">
+        <div class="section-tag">// CANON CHRONICLE · ХРОНОЛОГІЯ</div>
+        <h2 class="section-title">ШЛЯХ ІТОШІ САЕ</h2>
+        <p class="section-desc">Фільтруй етапи біографії: від дитячої клятви в Камакурі та зміни позиції в Мадриді до матчу проти Blue Lock 11 і горизонту ЧС U-20.</p>
+      </div>
+
+      <div class="timeline-filters" role="tablist" aria-label="Фільтр етапів хронології">
+        <button type="button" class="t-filter-btn active" data-filter="all">УСЯ ІСТОРІЯ [10]</button>
+        <button type="button" class="t-filter-btn" data-filter="origins">КАМАКУРА І RE AL [01–04]</button>
+        <button type="button" class="t-filter-btn" data-filter="u20">МАТЧ U-20 [05–08]</button>
+        <button type="button" class="t-filter-btn" data-filter="future">ПІСЛЯМАТЧЕВЕ ТА ЧС U-20 [09–10]</button>
+      </div>
+
+      <div id="timelineContainer" class="timeline-container"></div>
+    </section>
+
+    <!-- ========================================================
+         5. GALLERY
+         ======================================================== -->
+    <section id="gallerySection" class="content-section">
+      <div class="section-header reveal-on-scroll">
+        <div class="section-tag">// VERIFIED MANGA &amp; ANIME ARCHIVE</div>
+        <h2 class="section-title">КАНОНІЧНА ГАЛЕРЕЯ СЦЕН</h2>
+        <p class="section-desc">Лише справжні кадри з манги та 2 сезону аніме Blue Lock. Натисни на будь-який фрейм для повного сюжетного та тактичного розбору.</p>
+      </div>
+
+      <div class="gallery-filters" role="tablist" aria-label="Фільтр галереї">
+        <button type="button" class="g-filter-btn active" data-gfilter="all">УСІ КАДРИ [20]</button>
+        <button type="button" class="g-filter-btn" data-gfilter="anime">АНІМЕ S2</button>
+        <button type="button" class="g-filter-btn" data-gfilter="u20">МАТЧ U-20</button>
+        <button type="button" class="g-filter-btn" data-gfilter="origins">ВИТОКИ ТА RE AL</button>
+        <button type="button" class="g-filter-btn" data-gfilter="rivals">СУПЕРНИКИ І СВІТ</button>
+      </div>
+
+      <div id="galleryGrid" class="gallery-grid"></div>
+    </section>
+
+    <!-- GALLERY MODAL -->
+    <div id="galleryModal" class="gallery-modal" aria-hidden="true" hidden>
+      <div class="gallery-modal-backdrop" id="modalBackdrop"></div>
+      <div class="gallery-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <button id="closeModalBtn" class="modal-close-btn" type="button" title="Закрити (Esc)">✕</button>
+        <div class="modal-layout">
+          <div class="modal-media-pane">
+            <img id="modalImg" src="" alt="" class="modal-img">
+            <div class="modal-media-meta">
+              <span id="modalBadge" class="modal-badge"></span>
+              <span id="modalCanonTag" class="modal-canon-tag"></span>
+            </div>
+          </div>
+          <div class="modal-info-pane">
+            <div class="modal-top-chips">
+              <span id="modalEgoBadge" class="modal-ego-badge"></span>
+              <span id="momentCounterText" class="moment-counter-text"></span>
+            </div>
+            <h3 id="modalTitle" class="modal-title"></h3>
+            <blockquote class="modal-quote-box">
+              <p id="modalQuoteText" class="modal-quote-text"></p>
+              <footer id="modalQuoteContext" class="modal-quote-context"></footer>
+            </blockquote>
+            <div class="modal-narrative-section">
+              <div class="modal-sub-label">// СЮЖЕТНИЙ КОНТЕКСТ</div>
+              <p id="modalEventNarrative" class="modal-narrative-text"></p>
+            </div>
+            <div class="modal-narrative-section">
+              <div class="modal-sub-label">// ТАКТИЧНИЙ ВПЛИВ</div>
+              <p id="modalTacticalImpact" class="modal-narrative-text"></p>
+            </div>
+            <div class="modal-chips-row">
+              <span id="modalChipEgo" class="modal-meta-chip"></span>
+              <span id="modalChipRival" class="modal-meta-chip"></span>
+            </div>
+            <div class="modal-nav-footer">
+              <button type="button" id="prevMomentBtn" class="modal-nav-btn">◀ ПОПЕРЕДНІЙ</button>
+              <button type="button" id="nextMomentBtn" class="modal-nav-btn">НАСТУПНИЙ ▶</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================
+         6. CALL SAE (1-ON-1 SIMULATOR)
+         ======================================================== -->
+    <section id="callSection" class="content-section" data-emotion="neutral">
+      <div class="call-hud-bar">
+        <div class="call-hud-left">
+          <div class="call-live-pill">
+            <span class="call-rec-dot" id="callStatusDot"></span>
+            <span class="call-channel-code">PRIVATE LINE // 糸師 冴 · RE AL</span>
+          </div>
+          <span class="call-timer" id="callTimer">00:00</span>
+          <div class="call-waveform" id="callWaveform" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+        <div class="call-hud-right">
+          <div class="call-mode-badge">
+            <span class="mode-dot"></span>
+            <span>АВТОНОМНИЙ ІНТЕЛЕКТ САЕ</span>
+          </div>
+          <button id="callHistoryBtn" class="call-hud-btn" type="button">📜 ЛОГ</button>
+          <button id="callResetBtn" class="call-hud-btn" type="button" title="Скинути розмову">↻ ЗАНОВО</button>
+        </div>
+      </div>
+
+      <div class="call-main-stage" id="callMainStage" data-emotion="neutral">
+        <div class="call-stage-bg-aura" aria-hidden="true"></div>
+        <div class="call-formula-overlay" aria-hidden="true">
+          <span>f(x) = ∂ψ/∂t</span>
+          <span>Δθ = 0.0°</span>
+          <span>NG-XI // №10</span>
+          <span>BEAUTIFUL DESTRUCTION</span>
+        </div>
+
+        <div class="call-stage-meta-top">
+          <div class="call-respect-widget">
+            <span class="respect-lbl">ОЦІНКА САЕ:</span>
+            <span class="respect-rank" id="callRespectRank">ХОЛОДНИЙ ІГНОР</span>
+            <div class="respect-bar-track">
+              <div class="respect-bar-fill" id="callRespectBar" style="width: 32%"></div>
+            </div>
+          </div>
+
+          <div class="call-emotion-pill" id="callEmotionPill">
+            <span class="emotion-dot"></span>
+            <span id="callEmotionLabel">ХОЛОДНИЙ СПОКІЙ</span>
+          </div>
+        </div>
+
+        <div class="call-portrait-zone">
+          <div class="sae-portrait-spotlight" aria-hidden="true"></div>
+          <div class="sae-portrait-stack" id="saePortraitStack">
+            <img id="saePortraitLayerA" class="sae-call-portrait is-visible" src="assets/call/sae_call_neutral.webp" alt="Ітоші Сае — відеозв’язок" decoding="async">
+            <img id="saePortraitLayerB" class="sae-call-portrait" src="assets/call/sae_call_neutral.webp" alt="" aria-hidden="true" loading="lazy" decoding="async">
+          </div>
+          <div class="portrait-bottom-fade" aria-hidden="true"></div>
+        </div>
+
+        <div class="sae-dialogue-square" id="saeDialogueBox" role="region" aria-label="Відповідь Ітоші Сае">
+          <span class="sq-corner sq-tl" aria-hidden="true"></span>
+          <span class="sq-corner sq-tr" aria-hidden="true"></span>
+          <span class="sq-corner sq-bl" aria-hidden="true"></span>
+          <span class="sq-corner sq-br" aria-hidden="true"></span>
+
+          <div class="dialogue-sq-header">
+            <div class="speaker-identity">
+              <span class="speaker-kanji">糸師 冴</span>
+              <span class="speaker-name">ІТОШІ САЕ</span>
+              <span class="speaker-source-tag" id="callReplySourceTag">RE AL LINE</span>
+            </div>
+            <div class="dialogue-sq-actions">
+              <span class="dialogue-typing-indicator" id="callTypingIndicator">КАЛЬКУЛЯЦІЯ ВІДПОВІДІ...</span>
+              <button id="callSkipTypingBtn" class="skip-typing-btn" type="button" hidden>ПРОПУСТИТИ ⏭</button>
+            </div>
+          </div>
+
+          <div class="dialogue-sq-body" id="callDialogueScroll">
+            <p class="dialogue-sq-text" id="saeDialogueText"></p>
+          </div>
+        </div>
+
+        <div class="call-controls-dock">
+          <div class="call-quick-topics" id="callQuickTopics" aria-label="Швидкі теми для Сае">
+            <button type="button" class="topic-chip" data-prompt="Чому ти в Іспанії перейшов із нападника в півзахисники?">🇪🇸 Re Al і позиція</button>
+            <button type="button" class="topic-chip" data-prompt="Що ти насправді думаєш про Ітоші Ріна?">❄️ Про Ріна</button>
+            <button type="button" class="topic-chip" data-prompt="Чому ти обрав саме Шідо Рюсея для збірної U-20?">😈 Про Шідо</button>
+            <button type="button" class="topic-chip" data-prompt="Чому після матчу U-20 ти сказав, що Японію змінить Ісагі Йоічі?">🎯 Про Ісагі</button>
+            <button type="button" class="topic-chip" data-prompt="Що скажеш про Банні Іґлесіаса та Вів'єна Хьюго?">🏆 Банні й Хьюго</button>
+            <button type="button" class="topic-chip" data-prompt="Як ти оціниш мою логіку на полі? Оціни мене.">⚡ Оціни мене</button>
+          </div>
+
+          <form id="callMessageForm" class="call-input-form" autocomplete="off">
+            <div class="call-input-wrap">
+              <span class="input-prompt-prefix">&gt;_</span>
+              <input
+                type="text"
+                id="callUserInput"
+                class="call-user-input"
+                maxlength="400"
+                placeholder="Напиши Ітоші Сае..."
+                aria-label="Повідомлення для Ітоші Сае"
+              >
+            </div>
+            <button type="submit" id="callSendBtn" class="call-send-btn">
+              <span>НАДІСЛАТИ</span>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- CALL HISTORY MODAL -->
+    <div id="callHistoryModal" class="gallery-modal call-modal" aria-hidden="true" hidden>
+      <div class="gallery-modal-backdrop" id="callHistoryBackdrop"></div>
+      <div class="gallery-modal-dialog call-history-dialog" role="dialog" aria-modal="true" aria-labelledby="callHistoryTitle">
+        <button id="closeCallHistoryBtn" class="modal-close-btn" type="button" title="Закрити">✕</button>
+        <div class="call-modal-header">
+          <span class="section-tag">// ENCRYPTED TRANSCRIPT</span>
+          <h3 id="callHistoryTitle" class="call-modal-title">ІСТОРІЯ РОЗМОВИ З САЕ</h3>
+        </div>
+        <div class="call-history-list" id="callHistoryList"></div>
+      </div>
+    </div>
+
+    <!-- ========================================================
+         7. 2D MINI-GAME ARENA
+         ======================================================== -->
+    <section id="gameSection" class="content-section">
+      <div class="section-header reveal-on-scroll">
+        <div class="section-tag">// METAVISION TRAJECTORY SIMULATOR</div>
+        <h2 class="section-title">2D АРЕНА: ITOSHI SAE PLAYMAKER</h2>
+        <p class="section-desc">Розрахуй траєкторію закрученого пасу крізь пресинг або фірмовий удар із нульового кута. Повзунок і індикатор сили на 100% завжди залишаються у видимій зоні поля.</p>
+      </div>
+
+      <div class="game-wrapper">
+        <div class="game-scenarios-bar" role="tablist" aria-label="Сценарії гри">
+          <button type="button" class="scenario-pill active" data-scenario="0" role="tab" aria-selected="true">
+            <span class="sc-code">STAGE 01</span>
+            <span class="sc-name">Нульовий кут (Ch. 115)</span>
+          </button>
+          <button type="button" class="scenario-pill" data-scenario="1" role="tab" aria-selected="false">
+            <span class="sc-code">STAGE 02</span>
+            <span class="sc-name">Простріл крізь коридор</span>
+          </button>
+          <button type="button" class="scenario-pill" data-scenario="2" role="tab" aria-selected="false">
+            <span class="sc-code">STAGE 03</span>
+            <span class="sc-name">Еластіко + Тривела</span>
+          </button>
+          <button type="button" class="scenario-pill" data-scenario="3" role="tab" aria-selected="false">
+            <span class="sc-code">STAGE 04</span>
+            <span class="sc-name">Flow: Прекрасне руйнування</span>
+          </button>
+          <button type="button" class="scenario-pill is-endless" data-scenario="4" role="tab" aria-selected="false">
+            <span class="sc-code">ENDLESS</span>
+            <span class="sc-name">Академія Re Al XI</span>
+          </button>
+        </div>
+
+        <div class="game-telemetry-hud">
+          <div class="hud-stat-chip">
+            <span class="chip-label">РАХУНОК</span>
+            <strong id="hudScoreVal" class="chip-number">0</strong>
+          </div>
+          <div class="hud-stat-chip">
+            <span class="chip-label">СЕРІЯ</span>
+            <strong id="hudStreakVal" class="chip-number">0x</strong>
+          </div>
+          <div class="hud-stat-chip">
+            <span class="chip-label">РЕКОРД</span>
+            <strong id="hudBestVal" class="chip-number">0</strong>
+          </div>
+          <div class="hud-flow-meter-wrap">
+            <div class="flow-meter-meta">
+              <span class="chip-label">ЗАРЯД BEAUTIFUL DESTRUCTION</span>
+              <strong id="hudFlowPct" class="chip-number flow-pct-text">100%</strong>
+            </div>
+            <div class="flow-meter-track">
+              <div id="hudFlowFill" class="flow-meter-fill" style="width: 100%;"></div>
+            </div>
+          </div>
+          <div class="hud-shot-meta">
+            <span class="chip-label">СИЛА / КРУЧЕННЯ</span>
+            <strong id="hudPowerAngle" class="chip-number">ГОТОВИЙ ДО ПРИЦІЛУ</strong>
+          </div>
+        </div>
+
+        <div id="gameScenarioBrief" class="game-scenario-brief">
+          STAGE 01 // Закрути м’яч лівою ногою з гострого правого кута в дальній верхній кут воріт.
+        </div>
+
+        <div class="canvas-container" id="gameCanvasWrap">
+          <canvas id="gameCanvas" width="1080" height="720"></canvas>
+          <div id="gameOverlayText" class="game-overlay-hint">
+            ТЯГНИ ВІД М’ЯЧА НАЗАД ДЛЯ ПРИЦІЛУ (ІНДИКАТОР 100% ЗАВЖДИ В МЕЖАХ ПОЛЯ)
+          </div>
+        </div>
+
+        <div class="game-control-deck">
+          <div class="deck-cluster deck-spin-cluster">
+            <div class="cluster-header-row">
+              <span class="cluster-title">КРУЧЕННЯ ТРИВЕЛИ / МАГНУСА</span>
+              <div id="spinMeterDisplay" class="spin-val-badge">0 RPM</div>
+            </div>
+            <div class="spin-slider-row">
+              <span class="spin-dir-tag">ЛІВО</span>
+              <input id="spinRangeSlider" class="spin-range-input" type="range" min="-100" max="100" step="2" value="0" aria-label="Рівень закрутки м’яча">
+              <span class="spin-dir-tag">ПРАВО</span>
+            </div>
+            <div class="spin-controls">
+              <button type="button" id="spinLeftBtn" class="spin-btn">◀ ЛІВІШЕ [A / Q]</button>
+              <button type="button" id="spinZeroBtn" class="spin-btn spin-reset-btn">0° ПРЯМИЙ</button>
+              <button type="button" id="spinRightBtn" class="spin-btn">ПРАВІШЕ [D / E] ▶</button>
+            </div>
+          </div>
+
+          <div class="deck-cluster deck-actions-cluster">
+            <div class="cluster-title">ТАКТИЧНИЙ ТРИГЕР FLOW</div>
+            <div class="deck-action-buttons">
+              <button type="button" id="triggerFlowBtn" class="flow-trigger-btn">АКТИВУВАТИ FLOW [F / ПРОБІЛ]</button>
+              <button type="button" id="resetShotBtn" class="spin-btn reset-round-btn" title="Оновити позицію [R]">↻ СКИД</button>
+            </div>
+            <p class="deck-hint-note">
+              Миша або палець: тягни від м’яча до 100% сили • A/D — закрутка • F/Пробіл — Flow • R — скид
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         8. EGO-AUDIT QUIZ (20 QUESTIONS)
+         ======================================================== -->
+    <section id="quizContainerSection" class="content-section">
+      <div class="section-header reveal-on-scroll">
+        <div class="section-tag">// PLAYMAKER AUDIT · 20 CANON QUESTIONS</div>
+        <h2 class="section-title">ЕГО-АУДИТ ІТОШІ САЕ</h2>
+        <p class="section-desc">4 блоки по 5 питань: біографія й Камакура, арсенал і Metavision, Re Al та U-20, психологія й суперники. Пояснення відкривається лише після відповіді.</p>
+      </div>
+
+      <div class="quiz-box">
+        <div id="quizStartPanel" class="quiz-panel active">
+          <div class="quiz-intro-grid">
+            <div class="quiz-block-pill"><span>БЛОК 01</span><strong>Біографія та витоки</strong></div>
+            <div class="quiz-block-pill"><span>БЛОК 02</span><strong>Зброя і Metavision</strong></div>
+            <div class="quiz-block-pill"><span>БЛОК 03</span><strong>Re Al і матч U-20</strong></div>
+            <div class="quiz-block-pill"><span>БЛОК 04</span><strong>Психологія та світ</strong></div>
+          </div>
+          <p class="quiz-intro-desc">
+            Жодних підказок у тексті самих варіантів: лише лаконічні канонічні формулювання та чесна перевірка твоїх знань про плеймейкера № 10.
+          </p>
+          <button type="button" id="startQuizBtn" class="bl-btn bl-btn-primary quiz-start-btn">
+            <span>РОЗПОЧАТИ АУДИТ [20 ПИТАНЬ]</span>
+          </button>
+        </div>
+
+        <div id="quizActivePanel" class="quiz-panel">
+          <div class="quiz-hud">
+            <div class="q-meta">
+              <span id="qBlockBadge" class="q-block-badge">БЛОК 1 // БІОГРАФІЯ</span>
+              <span id="qCounterText" class="q-counter">ПИТАННЯ 1 / 20</span>
+            </div>
+            <div class="q-score-live">
+              <span>ТОЧНІСТЬ: <strong id="qScoreVal">0</strong></span>
+              <span id="qStreakVal" class="q-streak-pill">СЕРІЯ: 0</span>
+            </div>
+          </div>
+
+          <div class="q-progress-track">
+            <div id="qProgressBar" class="q-progress-bar" style="width: 5%;"></div>
+          </div>
+
+          <h3 id="qQuestionText" class="q-question-text"></h3>
+
+          <div id="qOptionsGrid" class="q-options-grid"></div>
+
+          <div id="qFeedbackBox" class="q-feedback-box" hidden>
+            <div id="qFeedbackTitle" class="q-feedback-title"></div>
+            <p id="qFeedbackExplain" class="q-feedback-explain"></p>
+            <button type="button" id="qNextBtn" class="bl-btn bl-btn-secondary">НАСТУПНЕ ПИТАННЯ ▶</button>
+          </div>
+        </div>
+
+        <div id="quizResultPanel" class="quiz-panel">
+          <div class="result-rank-badge" id="resultRankBadge">PLAYMAKER GRADE</div>
+          <h3 id="resultRankTitle" class="result-rank-title"></h3>
+          <div class="result-score-big">
+            <span id="resultScoreNum">0</span> / 20
+          </div>
+          <p id="resultRankQuote" class="result-rank-quote"></p>
+
+          <div id="resultBlocksGrid" class="result-blocks-grid"></div>
+
+          <div class="result-actions">
+            <button type="button" id="restartQuizBtn" class="bl-btn bl-btn-primary">ПРОЙТИ ЩЕ РАЗ</button>
+            <button type="button" id="toggleReviewBtn" class="bl-btn bl-btn-ghost">ПОКАЗАТИ РОЗБІР ВІДПОВІДЕЙ</button>
+          </div>
+
+          <div id="resultReviewList" class="result-review-list" hidden></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <span class="f-logo">BLUE LOCK // ITOSHI SAE TACTICAL ARCHIVE</span>
+        <span class="f-sub">New Generation World XI · Re Al Youth · 糸師 冴</span>
+      </div>
+      <div class="footer-nav">
+        <span>2D Trajectory Arena</span>
+        <span class="sep">•</span>
+        <span>Egoist Bible Canon</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="data.js?v=20261114_sae1" defer></script>
+  <script src="game.js?v=20261114_sae1" defer></script>
+  <script src="app.js?v=20261114_sae1" defer></script>
+</body>
+</html>
