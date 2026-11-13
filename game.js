@@ -207,11 +207,11 @@ const ADOFAI_DIFFICULTIES = [
     brief: 'LVL 01 // Розминка U-20 (108 BPM, 32 кроки) — Рівний ритм для контролю темпу. Бот Сае грає паралельно в нижній доріжці.',
     bpm: 108,
     stepCount: 32,
-    perfectMs: 74,
-    goodMs: 140,
-    hitWindowMs: 185,
+    perfectMs: 78,
+    goodMs: 148,
+    hitWindowMs: 200,
     allowFastCorners: false,
-    botProfile: { perfectProb: 0.72, goodProb: 0.24, missProb: 0.04, perfectJitterMs: 30, goodMinMs: 78, goodMaxMs: 122 },
+    botProfile: { perfectProb: 0.64, goodProb: 0.28, missProb: 0.08, perfectJitterMs: 28, goodMinMs: 76, goodMaxMs: 124 },
     seed: 101
   },
   {
@@ -221,11 +221,11 @@ const ADOFAI_DIFFICULTIES = [
     brief: 'LVL 02 // Центр поля (136 BPM, 44 кроки) — Прискорені повороти W/S/D у стилі дуелі півзахисту U-20. Точність Сае зростає.',
     bpm: 136,
     stepCount: 44,
-    perfectMs: 58,
-    goodMs: 115,
-    hitWindowMs: 160,
+    perfectMs: 62,
+    goodMs: 122,
+    hitWindowMs: 172,
     allowFastCorners: true,
-    botProfile: { perfectProb: 0.86, goodProb: 0.12, missProb: 0.02, perfectJitterMs: 22, goodMinMs: 62, goodMaxMs: 96 },
+    botProfile: { perfectProb: 0.80, goodProb: 0.16, missProb: 0.04, perfectJitterMs: 20, goodMinMs: 60, goodMaxMs: 100 },
     seed: 202
   },
   {
@@ -235,11 +235,11 @@ const ADOFAI_DIFFICULTIES = [
     brief: 'LVL 03 // Flow Ch. 147 (164 BPM, 56 кроків) — Швидкі каскади без права на збій проти пробудженого World XI Сае.',
     bpm: 164,
     stepCount: 56,
-    perfectMs: 48,
-    goodMs: 95,
-    hitWindowMs: 138,
+    perfectMs: 50,
+    goodMs: 102,
+    hitWindowMs: 150,
     allowFastCorners: true,
-    botProfile: { perfectProb: 0.94, goodProb: 0.06, missProb: 0.0, perfectJitterMs: 14, goodMinMs: 50, goodMaxMs: 78 },
+    botProfile: { perfectProb: 0.92, goodProb: 0.07, missProb: 0.01, perfectJitterMs: 13, goodMinMs: 48, goodMaxMs: 80 },
     seed: 303
   }
 ];
@@ -279,14 +279,18 @@ class SaeRinAdofaiDuel {
 
     this.W = 1080;
     this.H = 540;
+    this.dpr = 1;
     this.laneHeight = 264;
     this.tileSize = 72;
     this.planetDist = this.tileSize;
+    this.gameSectionEl = document.getElementById('gameSection');
 
     this.diffIndex = 0;
     this.state = 'idle'; // 'idle' | 'countdown' | 'playing' | 'finished'
     this.startPerfMs = 0;
+    this.pausedAtPerfMs = null;
     this.lastBeatTickIndex = -1;
+    this.beatPulse = 0;
     this.rafId = null;
 
     this.chart = null;
@@ -295,10 +299,10 @@ class SaeRinAdofaiDuel {
     this.botStats = null;
 
     this.playerCursor = 0;
-    this.playerVisualSegStart = 0;
     this.playerStats = null;
 
     this.particles = [];
+    this.ripples = [];
     this.popups = [];
     this.keyFlash = { W: 0, S: 0, A: 0, D: 0 };
     this.botKeyFlash = { key: null, until: 0 };
@@ -306,10 +310,19 @@ class SaeRinAdofaiDuel {
     this.playerCam = { x: 0, y: 0 };
     this.botCam = { x: 0, y: 0 };
 
+    this.setupCanvasResolution();
     this.cacheDom();
     this.loadDifficulty(0);
     this.bindEvents();
     this.startLoop();
+  }
+
+  setupCanvasResolution() {
+    if (!this.canvas || !this.ctx) return;
+    this.dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    this.canvas.width = Math.round(this.W * this.dpr);
+    this.canvas.height = Math.round(this.H * this.dpr);
+    this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
   }
 
   cacheDom() {
@@ -416,6 +429,21 @@ class SaeRinAdofaiDuel {
         this.loadDifficulty(this.diffIndex);
       }
     });
+
+    document.addEventListener('visibilitychange', () => {
+      if (this.state !== 'countdown' && this.state !== 'playing') return;
+      const now = performance.now();
+      if (document.hidden) {
+        if (this.pausedAtPerfMs === null) this.pausedAtPerfMs = now;
+      } else if (this.pausedAtPerfMs !== null) {
+        this.startPerfMs += (now - this.pausedAtPerfMs);
+        this.pausedAtPerfMs = null;
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      this.setupCanvasResolution();
+    }, { passive: true });
   }
 
   requestReturnToCall(fromVerdict) {
@@ -561,33 +589,43 @@ class SaeRinAdofaiDuel {
   }
 
   buildBotPlan(chart) {
-    const { diff, steps } = chart;
+    const { diff, steps, countInMs } = chart;
     const rng = createRng(diff.seed + Math.floor(Math.random() * 900) + 17);
     const prof = diff.botProfile;
+    let prevTriggerMs = countInMs - chart.beatMs * 0.65;
 
     return steps.map((step) => {
       const roll = rng();
-      let grade = 'perfect';
-      let offsetMs = 0;
+      let rawOffsetMs = 0;
 
       if (roll < prof.perfectProb) {
-        grade = 'perfect';
-        offsetMs = (rng() * 2 - 1) * prof.perfectJitterMs;
+        rawOffsetMs = (rng() * 2 - 1) * prof.perfectJitterMs;
       } else if (roll < prof.perfectProb + prof.goodProb) {
-        grade = 'good';
         const mag = prof.goodMinMs + rng() * (prof.goodMaxMs - prof.goodMinMs);
-        offsetMs = (rng() < 0.5 ? -1 : 1) * mag;
+        rawOffsetMs = (rng() < 0.5 ? -1 : 1) * mag;
       } else {
-        grade = 'miss';
-        offsetMs = diff.hitWindowMs - 6;
+        rawOffsetMs = (rng() < 0.35 ? -1 : 1) * (diff.goodMs + 14 + rng() * Math.max(8, diff.hitWindowMs - diff.goodMs - 20));
       }
+
+      const minGap = Math.max(58, step.durationMs * 0.44);
+      const minAllowedMs = prevTriggerMs + minGap;
+      const maxAllowedMs = step.targetMs + diff.hitWindowMs - 12;
+      const triggerMs = Math.min(maxAllowedMs, Math.max(minAllowedMs, step.targetMs + rawOffsetMs));
+      const offsetMs = triggerMs - step.targetMs;
+      const absErr = Math.abs(offsetMs);
+
+      let grade = 'miss';
+      if (absErr <= diff.perfectMs) grade = 'perfect';
+      else if (absErr <= diff.goodMs) grade = 'good';
+
+      prevTriggerMs = triggerMs;
 
       return {
         stepIndex: step.index,
         dir: step.dir,
         grade,
         offsetMs,
-        triggerMs: step.targetMs + offsetMs
+        triggerMs
       };
     });
   }
@@ -620,13 +658,15 @@ class SaeRinAdofaiDuel {
     this.botPlan = this.buildBotPlan(this.chart);
 
     this.state = 'idle';
+    this.pausedAtPerfMs = null;
     this.playerCursor = 0;
     this.botCursor = 0;
-    this.playerVisualSegStart = 0;
     this.lastBeatTickIndex = -1;
+    this.beatPulse = 0;
     this.playerStats = this.createEmptyStats(diff.stepCount);
     this.botStats = this.createEmptyStats(diff.stepCount);
     this.particles = [];
+    this.ripples = [];
     this.popups = [];
 
     this.playerCam = { x: this.chart.tiles[0].x, y: this.chart.tiles[0].y };
@@ -668,12 +708,14 @@ class SaeRinAdofaiDuel {
     this.playerStats = this.createEmptyStats(this.chart.steps.length);
     this.botStats = this.createEmptyStats(this.chart.steps.length);
     this.particles = [];
+    this.ripples = [];
     this.popups = [];
     this.lastBeatTickIndex = -1;
+    this.beatPulse = 0;
+    this.pausedAtPerfMs = null;
 
     this.state = 'countdown';
     this.startPerfMs = performance.now();
-    this.playerVisualSegStart = 0;
 
     if (this.dom.verdictOverlay) this.dom.verdictOverlay.hidden = true;
     if (this.dom.startBtn) {
@@ -702,7 +744,7 @@ class SaeRinAdofaiDuel {
     const absErr = Math.abs(deltaMs);
 
     if (absErr > diff.hitWindowMs) {
-      if (elapsedMs > this.chart.countInMs - diff.beatMs * 0.5) {
+      if (elapsedMs > this.chart.countInMs - diff.beatMs * 0.45 && absErr <= diff.beatMs * 0.78) {
         this.playerStats.faults += 1;
         this.playerStats.combo = 0;
         this.sfx?.playHit?.('miss');
@@ -752,9 +794,9 @@ class SaeRinAdofaiDuel {
     const color = grade === 'perfect' ? '#00ffc8' : (grade === 'good' ? '#eab308' : '#ff2a5f');
     this.addPopup('top', tile.x, tile.y - 38, label, color);
     this.spawnBurst('top', tile.x, tile.y, color, grade === 'perfect' ? 14 : 8);
+    this.spawnRipple('top', tile.x, tile.y, color);
 
     this.playerCursor += 1;
-    this.playerVisualSegStart = Math.max(elapsedMs, step.targetMs - 10);
     this.updateNextKeyHighlight();
     this.syncHud();
   }
@@ -781,8 +823,9 @@ class SaeRinAdofaiDuel {
     const color = entry.grade === 'perfect' ? '#eab308' : (entry.grade === 'good' ? '#fb923c' : '#f43f5e');
     this.addPopup('bot', tile.x, tile.y - 38, label, color);
     this.spawnBurst('bot', tile.x, tile.y, color, entry.grade === 'perfect' ? 12 : 7);
+    this.spawnRipple('bot', tile.x, tile.y, color);
 
-    this.botKeyFlash = { key: entry.dir, until: performance.now() + 140 };
+    this.botKeyFlash = { key: entry.dir, until: performance.now() + 145 };
     this.botCursor += 1;
     this.syncHud();
   }
@@ -809,6 +852,17 @@ class SaeRinAdofaiDuel {
 
   addPopup(lane, x, y, text, color) {
     this.popups.push({ lane, x, y, text, color, life: 0.65, maxLife: 0.65 });
+  }
+
+  spawnRipple(lane, x, y, color) {
+    this.ripples.push({
+      lane,
+      x,
+      y,
+      color,
+      life: 0.36,
+      maxLife: 0.36
+    });
   }
 
   spawnBurst(lane, x, y, color, count) {
@@ -912,12 +966,21 @@ class SaeRinAdofaiDuel {
   }
 
   update(now, dt) {
+    this.beatPulse *= Math.exp(-12 * dt);
+
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
       p.x += p.vx * dt;
       p.y += p.vy * dt;
+      p.vx *= Math.exp(-4.5 * dt);
+      p.vy *= Math.exp(-4.5 * dt);
       p.life -= dt;
       if (p.life <= 0) this.particles.splice(i, 1);
+    }
+    for (let i = this.ripples.length - 1; i >= 0; i--) {
+      const rp = this.ripples[i];
+      rp.life -= dt;
+      if (rp.life <= 0) this.ripples.splice(i, 1);
     }
     for (let i = this.popups.length - 1; i >= 0; i--) {
       const pop = this.popups[i];
@@ -926,12 +989,14 @@ class SaeRinAdofaiDuel {
       if (pop.life <= 0) this.popups.splice(i, 1);
     }
 
+    let elapsedMs = 0;
     if (this.state === 'countdown' || this.state === 'playing') {
-      const elapsedMs = now - this.startPerfMs;
+      elapsedMs = now - this.startPerfMs;
 
       const beatIdx = Math.floor(elapsedMs / this.chart.beatMs);
       if (beatIdx > this.lastBeatTickIndex) {
         this.lastBeatTickIndex = beatIdx;
+        this.beatPulse = 1;
         this.sfx?.playBeatTick?.(beatIdx < 4 || beatIdx % 4 === 0);
       }
 
@@ -965,16 +1030,36 @@ class SaeRinAdofaiDuel {
       }
     }
 
-    const pPivot = this.chart.tiles[Math.min(this.playerCursor, this.chart.tiles.length - 1)];
-    const bPivot = this.chart.tiles[Math.min(this.botCursor, this.chart.tiles.length - 1)];
-    const camLerp = 1 - Math.exp(-10 * dt);
-    this.playerCam.x += (pPivot.x - this.playerCam.x) * camLerp;
-    this.playerCam.y += (pPivot.y - this.playerCam.y) * camLerp;
-    this.botCam.x += (bPivot.x - this.botCam.x) * camLerp;
-    this.botCam.y += (bPivot.y - this.botCam.y) * camLerp;
+    const tiles = this.chart.tiles;
+    const steps = this.chart.steps;
+    const lastTileIdx = tiles.length - 1;
+
+    const getLookAheadTarget = (cursor) => {
+      const cIdx = Math.min(cursor, lastTileIdx);
+      const curr = tiles[cIdx];
+      if (cursor >= steps.length) return { x: curr.x, y: curr.y };
+      const next = tiles[Math.min(cursor + 1, lastTileIdx)];
+      const step = steps[cursor];
+      const prog = (this.state === 'playing' || this.state === 'countdown')
+        ? Math.max(0, Math.min(1, 1 - (step.targetMs - elapsedMs) / Math.max(80, step.durationMs)))
+        : 0;
+      const aheadFactor = 0.22 + prog * 0.14;
+      return {
+        x: curr.x + (next.x - curr.x) * aheadFactor,
+        y: curr.y + (next.y - curr.y) * aheadFactor
+      };
+    };
+
+    const pTarget = getLookAheadTarget(this.playerCursor);
+    const bTarget = getLookAheadTarget(this.botCursor);
+    const camLerp = 1 - Math.exp(-8.5 * dt);
+    this.playerCam.x += (pTarget.x - this.playerCam.x) * camLerp;
+    this.playerCam.y += (pTarget.y - this.playerCam.y) * camLerp;
+    this.botCam.x += (bTarget.x - this.botCam.x) * camLerp;
+    this.botCam.y += (bTarget.y - this.botCam.y) * camLerp;
   }
 
-  getPlanetAngle(cursor, elapsedMs, segStartOverride = null) {
+  getPlanetAngle(cursor, elapsedMs) {
     const steps = this.chart.steps;
     if (cursor >= steps.length) {
       return steps[steps.length - 1].outAngle;
@@ -984,16 +1069,12 @@ class SaeRinAdofaiDuel {
       return step.fromAngle;
     }
 
-    if (cursor === 0) {
-      const remainingMs = step.targetMs - elapsedMs;
-      const radPerMs = Math.PI / this.chart.beatMs;
-      return step.outAngle - step.cw * remainingMs * radPerMs;
-    }
-
-    const segStart = segStartOverride ?? steps[cursor - 1].targetMs;
-    const totalDur = Math.max(40, step.targetMs - segStart);
-    const prog = Math.max(0, Math.min(1.25, (elapsedMs - segStart) / totalDur));
-    return step.fromAngle + step.sweep * prog;
+    const radPerMs = Math.PI / this.chart.beatMs;
+    const minDelta = -Math.max(Math.abs(step.sweep) * 1.18, Math.PI * 1.15);
+    const maxDelta = Math.PI * 0.45;
+    const rawDelta = (elapsedMs - step.targetMs) * radPerMs;
+    const clampedDelta = Math.max(minDelta, Math.min(maxDelta, rawDelta));
+    return step.outAngle + step.cw * clampedDelta;
   }
 
   drawLane(opts) {
@@ -1033,8 +1114,14 @@ class SaeRinAdofaiDuel {
       ctx.stroke();
     }
 
+    const pulseZoom = (this.state === 'playing' || this.state === 'countdown')
+      ? 1 + this.beatPulse * 0.012
+      : 1;
+
     ctx.save();
-    ctx.translate(offsetX, offsetY);
+    ctx.translate(centerX, centerY);
+    ctx.scale(pulseZoom, pulseZoom);
+    ctx.translate(-cam.x, -cam.y);
 
     const tiles = this.chart.tiles;
     ctx.beginPath();
@@ -1108,7 +1195,22 @@ class SaeRinAdofaiDuel {
       ctx.restore();
     }
 
+    for (const rp of this.ripples) {
+      if (rp.lane !== laneKey) continue;
+      const t = 1 - Math.max(0, rp.life / rp.maxLife);
+      const r = 24 + t * 42;
+      ctx.beginPath();
+      ctx.arc(rp.x, rp.y, r, 0, Math.PI * 2);
+      ctx.strokeStyle = rp.color;
+      ctx.lineWidth = 3 * (1 - t);
+      ctx.globalAlpha = 0.72 * (1 - t);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
     const pivot = tiles[Math.min(cursor, tiles.length - 1)];
+    const activeStep = this.chart.steps[Math.min(cursor, this.chart.steps.length - 1)];
+    const cwDir = activeStep ? activeStep.cw : 1;
     const orbX = pivot.x + Math.cos(planetAngle) * this.planetDist;
     const orbY = pivot.y + Math.sin(planetAngle) * this.planetDist;
 
@@ -1119,6 +1221,26 @@ class SaeRinAdofaiDuel {
     ctx.setLineDash([5, 6]);
     ctx.stroke();
     ctx.setLineDash([]);
+
+    // Silky motion trail arc behind the orbiting sphere
+    if (this.state === 'playing' || this.state === 'countdown') {
+      const trailSpan = 0.92;
+      const segs = 10;
+      for (let s = 0; s < segs; s++) {
+        const f0 = s / segs;
+        const f1 = (s + 1) / segs;
+        const a0 = planetAngle - cwDir * trailSpan * (1 - f0);
+        const a1 = planetAngle - cwDir * trailSpan * (1 - f1);
+        ctx.beginPath();
+        ctx.arc(pivot.x, pivot.y, this.planetDist, a0, a1, cwDir < 0);
+        ctx.strokeStyle = theme.planetB;
+        ctx.lineCap = 'round';
+        ctx.lineWidth = 4 + f1 * 12;
+        ctx.globalAlpha = f1 * 0.34;
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
 
     ctx.beginPath();
     ctx.moveTo(pivot.x, pivot.y);
@@ -1142,6 +1264,13 @@ class SaeRinAdofaiDuel {
     ctx.shadowBlur = 18;
     ctx.fill();
     ctx.shadowBlur = 0;
+
+    ctx.beginPath();
+    ctx.arc(orbX, orbY, 5.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = 0.72;
+    ctx.fill();
+    ctx.globalAlpha = 1;
 
     for (const p of this.particles) {
       if (p.lane !== laneKey) continue;
@@ -1202,13 +1331,8 @@ class SaeRinAdofaiDuel {
       ? now - this.startPerfMs
       : 0;
 
-    const pAngle = this.getPlanetAngle(
-      this.playerCursor,
-      elapsedMs,
-      this.playerCursor > 0 ? this.playerVisualSegStart : null
-    );
-    const bSegStart = this.botCursor > 0 ? this.botPlan[this.botCursor - 1]?.triggerMs : null;
-    const bAngle = this.getPlanetAngle(this.botCursor, elapsedMs, bSegStart);
+    const pAngle = this.getPlanetAngle(this.playerCursor, elapsedMs);
+    const bAngle = this.getPlanetAngle(this.botCursor, elapsedMs);
 
     this.drawLane({
       laneKey: 'top',
@@ -1307,8 +1431,11 @@ class SaeRinAdofaiDuel {
     const tick = (now) => {
       const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000));
       last = now;
-      this.update(now, dt);
-      this.drawFrame(now);
+      const isGameVisible = Boolean(this.gameSectionEl && this.gameSectionEl.classList.contains('active'));
+      if (isGameVisible && this.pausedAtPerfMs === null) {
+        this.update(now, dt);
+        this.drawFrame(now);
+      }
       this.rafId = requestAnimationFrame(tick);
     };
     this.rafId = requestAnimationFrame(tick);
