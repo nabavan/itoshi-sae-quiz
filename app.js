@@ -848,10 +848,9 @@ document.addEventListener('DOMContentLoaded', () => {
     applyAutoRevealClasses(document);
     const root = scopeEl || document;
     const vh = window.innerHeight || document.documentElement.clientHeight || 900;
-    const skipMotion = reduceMotionQuery && reduceMotionQuery.matches;
 
     root.querySelectorAll('.reveal-on-scroll').forEach((el) => {
-      if (skipMotion || !revealObserver) {
+      if (!revealObserver) {
         el.classList.add('is-visible');
         return;
       }
@@ -960,8 +959,7 @@ document.addEventListener('DOMContentLoaded', () => {
     navLinks.forEach((btn) => btn.classList.toggle('active', btn.getAttribute('data-target') === targetId));
     window.scrollTo({ top: 0, behavior: 'auto' });
     const activeEl = document.getElementById(targetId);
-    const skipMotion = reduceMotionQuery && reduceMotionQuery.matches;
-    if (activeEl && !skipMotion) {
+    if (activeEl) {
       applyAutoRevealClasses(document);
       activeEl.querySelectorAll('.reveal-on-scroll').forEach((el) => el.classList.remove('is-visible'));
       void activeEl.offsetHeight;

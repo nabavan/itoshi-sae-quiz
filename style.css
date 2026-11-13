@@ -2652,7 +2652,21 @@ html.js-reveal-ready .reveal-on-scroll.is-visible {
 }
 
 .quiz-panel { display: none; }
-.quiz-panel.active { display: block; }
+.quiz-panel.active {
+  display: block;
+  animation: quizScreenSlide 0.48s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes quizScreenSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.99);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
 
 .quiz-intro-grid {
   display: grid;
@@ -2869,25 +2883,23 @@ html.js-reveal-ready .reveal-on-scroll.is-visible {
   }
 }
 
+.hero-status-pill {
+  animation: hudStatusBreath 3.5s ease-in-out infinite;
+}
+
+@keyframes hudStatusBreath {
+  0%, 100% { box-shadow: 0 0 12px rgba(0, 229, 195, 0.16); }
+  50% { box-shadow: 0 0 24px rgba(225, 29, 72, 0.34); }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
   #saeAmbientCanvas,
   .visual-overlay-scanline,
   .call-reticle-threads {
-    display: none !important;
+    display: none;
   }
-  html.js-reveal-ready .reveal-on-scroll,
-  .reveal-on-scroll {
-    opacity: 1 !important;
-    transform: none !important;
-    filter: none !important;
-    transition: none !important;
-  }
-  .aura-outer,
+  .visual-aura-ring,
+  .hero-status-pill,
   .hero-scroll-cue,
   .brand-logo-hex.is-flow-armed,
   .sae-portrait-stack,
