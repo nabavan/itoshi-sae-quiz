@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,600;1,700&family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+JP:wght@700;900&family=Russo+One&family=Unbounded:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css?v=20261114_sae6">
+  <link rel="stylesheet" href="style.css?v=20261114_sae7">
 </head>
 <body class="sae-theme">
   <!-- Background Ambience, Numerical Formulas & Metavision Grid -->
@@ -43,6 +43,7 @@
       <button type="button" class="nav-link" data-target="weaponsSection">ЗБРОЯ &amp; FLOW</button>
       <button type="button" class="nav-link" data-target="timelineSection">ХРОНОЛОГІЯ</button>
       <button type="button" class="nav-link" data-target="gallerySection">ГАЛЕРЕЯ</button>
+      <button type="button" class="nav-link highlight-lab" data-target="metavisionSection">👁️ METAVISION LAB</button>
       <button type="button" class="nav-link highlight-call" data-target="callSection">📞 ДЗВІНОК САЕ</button>
       <button type="button" class="nav-link highlight-quiz" data-target="quizContainerSection">🧠 ЕГО-АУДИТ</button>
     </nav>
@@ -57,6 +58,7 @@
         <span class="sound-label">SFX: ON</span>
       </button>
     </div>
+    <div id="navScrollProgress" class="nav-scroll-progress" aria-hidden="true"></div>
   </header>
 
   <div id="saeHudToast" class="sae-hud-toast" role="status" aria-live="polite" aria-hidden="true"></div>
@@ -112,10 +114,27 @@
               <span>ПРОЙТИ ЕГО-АУДИТ</span>
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
             </button>
-            <button type="button" class="bl-btn bl-btn-ghost" data-jump="dossierSection">
-              <span>ДОСЬЄ ПЛЕЙМЕЙКЕРА</span>
+            <button type="button" class="bl-btn bl-btn-ghost" data-jump="metavisionSection">
+              <span>METAVISION LAB</span>
             </button>
           </div>
+
+          <aside id="playmakerProfileBar" class="playmaker-profile-bar" aria-label="Твій статус синхронізації з архівом">
+            <div class="profile-bar-top">
+              <span class="profile-kicker">// LOCAL PLAYMAKER TELEMETRY</span>
+              <strong class="profile-rank-pill" data-profile-rank>ACADEMY OBSERVER</strong>
+              <span class="profile-sync-num" data-profile-sync>0%</span>
+            </div>
+            <div class="profile-progress-track">
+              <div class="profile-progress-fill" data-profile-bar style="width:4%"></div>
+            </div>
+            <div class="profile-metrics-grid">
+              <div class="pm-chip"><span>ЕГО-АУДИТ</span><strong data-profile-quiz>НЕ ПРОЙДЕНО</strong></div>
+              <div class="pm-chip"><span>ДУЕЛЬ U-20</span><strong data-profile-duel>Через Дзвінок</strong></div>
+              <div class="pm-chip"><span>ОЗВУЧКА</span><strong data-profile-voices>0 / 7</strong></div>
+              <div class="pm-chip"><span>ТАКТИКА LAB</span><strong data-profile-lab>0 / 3</strong></div>
+            </div>
+          </aside>
         </div>
 
         <div class="hero-visual">
@@ -484,18 +503,62 @@
       <div class="section-header reveal-on-scroll">
         <div class="section-tag">// VERIFIED MANGA &amp; ANIME ARCHIVE</div>
         <h2 class="section-title">КАНОНІЧНА ГАЛЕРЕЯ СЦЕН</h2>
-        <p class="section-desc">Лише справжні кадри з манги та 2 сезону аніме Blue Lock. Натисни на будь-який фрейм для повного сюжетного та тактичного розбору.</p>
+        <p class="section-desc">Лише справжні кадри з манги, епізодів Blue Lock та оригінальні репліки Сае японською (Takahiro Sakurai) і англійською (Alejandro Saab).</p>
       </div>
 
-      <div class="gallery-filters" role="tablist" aria-label="Фільтр галереї">
-        <button type="button" class="g-filter-btn active" data-gfilter="all">УСІ КАДРИ [20]</button>
-        <button type="button" class="g-filter-btn" data-gfilter="anime">АНІМЕ S2</button>
-        <button type="button" class="g-filter-btn" data-gfilter="u20">МАТЧ U-20</button>
-        <button type="button" class="g-filter-btn" data-gfilter="origins">ВИТОКИ ТА RE AL</button>
-        <button type="button" class="g-filter-btn" data-gfilter="rivals">СУПЕРНИКИ І СВІТ</button>
+      <div class="gallery-subtabs" role="tablist" aria-label="Підрозділи галереї">
+        <button type="button" class="g-subtab-btn active" data-gsubtab="frames" role="tab" aria-selected="true">
+          <span>🎞️ КАНОНІЧНІ КАДРИ</span>
+          <span class="subtab-count">20</span>
+        </button>
+        <button type="button" class="g-subtab-btn" data-gsubtab="voices" role="tab" aria-selected="false">
+          <span>🎙️ КУЛЬТОВІ ФРАЗИ · JP / EN</span>
+          <span class="subtab-count">7 × 2</span>
+        </button>
       </div>
 
-      <div id="galleryGrid" class="gallery-grid"></div>
+      <div id="galleryFramesView" class="gallery-subview">
+        <div class="gallery-filters" role="tablist" aria-label="Фільтр галереї">
+          <button type="button" class="g-filter-btn active" data-gfilter="all">УСІ КАДРИ [20]</button>
+          <button type="button" class="g-filter-btn" data-gfilter="anime">АНІМЕ S2</button>
+          <button type="button" class="g-filter-btn" data-gfilter="u20">МАТЧ U-20</button>
+          <button type="button" class="g-filter-btn" data-gfilter="origins">ВИТОКИ ТА RE AL</button>
+          <button type="button" class="g-filter-btn" data-gfilter="rivals">СУПЕРНИКИ І СВІТ</button>
+        </div>
+
+        <div id="galleryGrid" class="gallery-grid"></div>
+      </div>
+
+      <div id="voiceArchiveView" class="gallery-subview voice-archive-view" hidden>
+        <div class="voice-archive-toolbar">
+          <div class="voice-toolbar-intro">
+            <span class="voice-toolbar-tag">// BLUE LOCK EPISODE AUDIO VAULT</span>
+            <p class="voice-toolbar-sub">Обери доріжку озвучки та прослухай культові діалоги Сае прямо з канонічних сцен (BGM автоматично приглушується).</p>
+          </div>
+          <div class="voice-lang-filters" role="group" aria-label="Фільтр мови озвучки">
+            <button type="button" class="v-lang-btn active" data-vlang="all">ОБІДВІ МОВИ</button>
+            <button type="button" class="v-lang-btn" data-vlang="jp">🇯🇵 JAPANESE (SAKURAI)</button>
+            <button type="button" class="v-lang-btn" data-vlang="en">🇺🇸 ENGLISH (SAAB)</button>
+          </div>
+        </div>
+
+        <div id="voiceNowPlayingBar" class="voice-now-bar" aria-live="polite">
+          <div class="voice-now-eq" id="voiceNowEq" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <div class="voice-now-meta">
+            <span class="voice-now-kicker" id="voiceNowKicker">АУДІОАРХІВ ГОТОВИЙ // ОБЕРИ РЕПЛІКУ</span>
+            <strong class="voice-now-title" id="voiceNowTitle">Натисни ▶ на будь-якій сцені, щоб увімкнути оригінал</strong>
+          </div>
+          <div class="voice-now-controls">
+            <input id="voiceSeekBar" class="voice-seek-bar" type="range" min="0" max="100" value="0" step="0.5" aria-label="Позиція відтворення аудіо" disabled>
+            <span class="voice-time-readout" id="voiceTimeReadout">00:00 / 00:00</span>
+            <button type="button" id="voiceStopBtn" class="voice-stop-btn" disabled>■ СТОП</button>
+          </div>
+        </div>
+
+        <div id="voiceQuotesGrid" class="voice-archive-grid"></div>
+      </div>
     </section>
 
     <!-- GALLERY MODAL -->
@@ -532,6 +595,14 @@
             <div class="modal-chips-row">
               <span id="modalChipEgo" class="modal-meta-chip"></span>
               <span id="modalChipRival" class="modal-meta-chip"></span>
+            </div>
+            <div id="modalVoiceStrip" class="modal-voice-strip" hidden>
+              <div class="modal-sub-label">// ОРИГІНАЛЬНА ОЗВУЧКА СЦЕНИ</div>
+              <div class="modal-voice-actions">
+                <button type="button" id="modalPlayJpBtn" class="modal-voice-btn">▶ 🇯🇵 JP · SAKURAI</button>
+                <button type="button" id="modalPlayEnBtn" class="modal-voice-btn">▶ 🇺🇸 EN · SAAB</button>
+                <button type="button" id="modalOpenVoicesTabBtn" class="modal-voice-btn is-link">В АУДІОАРХІВ ↗</button>
+              </div>
             </div>
             <div class="modal-nav-footer">
               <button type="button" id="prevMomentBtn" class="modal-nav-btn">◀ ПОПЕРЕДНІЙ</button>
@@ -779,7 +850,12 @@
 
         <!-- SPLIT-SCREEN SYNCHRONIZED ADOFAI ARENA CANVAS -->
         <div class="canvas-container duel-canvas-wrap" id="gameCanvasWrap">
-          <canvas id="gameCanvas" width="1080" height="540" aria-label="Ритм-дуель АДОФАІ Ітоші Рін проти бота Ітоші Сае"></canvas>
+          <div class="duel-canvas-stage">
+            <canvas id="gameCanvas" width="1080" height="540" aria-label="Ритм-дуель АДОФАІ Ітоші Рін проти бота Ітоші Сае"></canvas>
+            <div id="gameOverlayText" class="game-overlay-hint">
+              НАТИСНИ «СТАРТ ДУЕЛІ» АБО [ПРОБІЛ] · КЕРУВАННЯ: W (ВГОРУ) · S (ВНИЗ) · A (ВЛІВО) · D (ВПРАВО)
+            </div>
+          </div>
 
           <div id="duelVerdictOverlay" class="duel-verdict-overlay" hidden aria-live="polite">
             <div class="duel-verdict-card">
@@ -804,10 +880,6 @@
                 <button type="button" id="verdictToCallBtn" class="bl-btn bl-btn-secondary">📞 ПОВЕРНУТИСЬ ДО САЕ</button>
               </div>
             </div>
-          </div>
-
-          <div id="gameOverlayText" class="game-overlay-hint">
-            НАТИСНИ «СТАРТ ДУЕЛІ» АБО [ПРОБІЛ] · КЕРУВАННЯ: W (ВГОРУ) · S (ВНИЗ) · A (ВЛІВО) · D (ВПРАВО)
           </div>
         </div>
 
@@ -851,6 +923,105 @@
               </button>
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         7B. METAVISION LAB (2D INTERACTIVE PITCH SIMULATOR)
+         ======================================================== -->
+    <section id="metavisionSection" class="content-section">
+      <div class="section-header reveal-on-scroll">
+        <div class="section-tag">// SPATIAL GEOMETRY &amp; MAGNUS TRAJECTORY ENGINE</div>
+        <h2 class="section-title">METAVISION LAB // ТАКТИЧНИЙ СИМУЛЯТОР</h2>
+        <p class="section-desc">Перевір власне читання поля очима Ітоші Сае: налаштуй кут пасу, підкрутку тривели (Magnus Spin) і швидкість м’яча проти реальних зон перехоплення.</p>
+      </div>
+
+      <div class="lab-briefing-banner reveal-on-scroll">
+        <div class="lab-briefing-media">
+          <img src="assets/sae_manga_u20_pose.webp" alt="Ітоші Сае у формі збірної Японії U-20 — режим аналізу поля Metavision" class="lab-briefing-img" loading="lazy" decoding="async">
+          <span class="lab-briefing-chip">U-20 TACTICAL CORE</span>
+        </div>
+        <div class="lab-briefing-info">
+          <div class="lab-briefing-top">
+            <div>
+              <span class="profile-kicker">// PLAYMAKER SYNC STATUS</span>
+              <h3 class="lab-briefing-heading">Аналіз траєкторій &amp; Телеметрія профілю</h3>
+            </div>
+            <strong class="profile-rank-pill" data-profile-rank>ACADEMY OBSERVER</strong>
+          </div>
+          <p class="lab-briefing-text">Натискай на поле або тягни золотий приціл 🎯, змінюй спін і темп пасу. У вільному режимі («Вільна дошка») можна пересувати навіть захисників.</p>
+          <div id="labProfileSummary" class="lab-profile-mini-grid">
+            <div class="pm-chip"><span>ПРОГРЕС СИНХР.</span><strong data-profile-sync>0%</strong></div>
+            <div class="pm-chip"><span>ЕГО-АУДИТ</span><strong data-profile-quiz>НЕ ПРОЙДЕНО</strong></div>
+            <div class="pm-chip"><span>ОЗВУЧКА</span><strong data-profile-voices>0 / 7</strong></div>
+            <div class="pm-chip"><span>ЗАДАЧІ LAB</span><strong data-profile-lab>0 / 3</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lab-shell">
+        <div id="labScenarioTabs" class="lab-scenarios-bar" role="tablist" aria-label="Сценарії Metavision Lab"></div>
+
+        <div class="lab-workspace-grid">
+          <div class="lab-canvas-panel">
+            <div class="lab-canvas-header">
+              <span id="labCaseCode" class="lab-case-badge">CASE 01 // CH. 115</span>
+              <h3 id="labCaseTitle" class="lab-case-title">Гол із нульового кута</h3>
+            </div>
+            <p id="labCaseSubtitle" class="lab-case-sub"></p>
+
+            <div class="lab-canvas-frame">
+              <canvas id="metavisionCanvas" width="1000" height="560" aria-label="Інтерактивне футбольне поле симулятора пасів та ударів Ітоші Сае"></canvas>
+            </div>
+
+            <div class="lab-hint-row">
+              <span class="lab-hint-label">METAVISION ПІДКАЗКА:</span>
+              <span id="labCaseHint" class="lab-hint-text"></span>
+            </div>
+          </div>
+
+          <aside class="lab-controls-panel">
+            <div class="lab-control-card">
+              <div class="lab-slider-group">
+                <div class="lab-slider-head">
+                  <label for="labCurveInput">🌀 ЗАКРУТКА ТРИВЕЛИ (MAGNUS SPIN)</label>
+                  <strong id="labCurveVal" class="lab-slider-val">-0.15</strong>
+                </div>
+                <input id="labCurveInput" class="lab-range" type="range" min="-1" max="1" step="0.02" value="-0.15">
+                <div class="lab-range-labels"><span>ЛІВІШЕ (-1.0)</span><span>ПРЯМО (0)</span><span>ПРАВІШЕ (+1.0)</span></div>
+              </div>
+
+              <div class="lab-slider-group">
+                <div class="lab-slider-head">
+                  <label for="labPowerInput">⚡ ПОТУЖНІСТЬ УДАРУ / ПАСУ</label>
+                  <strong id="labPowerVal" class="lab-slider-val">68%</strong>
+                </div>
+                <input id="labPowerInput" class="lab-range" type="range" min="40" max="100" step="1" value="68">
+                <div class="lab-range-labels"><span>ТЕХНІЧНИЙ 40%</span><span>КАНОН 85%</span><span>БЛИСКАВКА 100%</span></div>
+              </div>
+
+              <div class="lab-metrics-grid">
+                <div class="lab-metric-item"><span>КУТ ВИЛЬОТУ</span><strong id="labMetricAngle">0°</strong></div>
+                <div class="lab-metric-item"><span>ДИСТАНЦІЯ ДУГИ</span><strong id="labMetricLen">0 м</strong></div>
+                <div class="lab-metric-item"><span>КОРИДОР ВІД ЗАХИСТУ</span><strong id="labMetricClearance">--</strong></div>
+                <div class="lab-metric-item"><span>МОДЕЛЬ xG%</span><strong id="labMetricXg">--</strong></div>
+              </div>
+
+              <div class="lab-action-stack">
+                <button type="button" id="labExecuteBtn" class="bl-btn bl-btn-primary lab-exec-btn">⚡ ЗАПУСТИТИ ТРАЄКТОРІЮ</button>
+                <div class="lab-secondary-btns">
+                  <button type="button" id="labOptimalBtn" class="lab-util-btn">👁️ ОПТИМУМ САЕ</button>
+                  <button type="button" id="labResetBtn" class="lab-util-btn">↺ СКИНУТИ</button>
+                </div>
+              </div>
+
+              <div id="labVerdictBox" class="lab-verdict-box is-idle" aria-live="polite">
+                <span id="labVerdictBadge" class="lab-verdict-badge">READY // ОЧІКУВАННЯ</span>
+                <p id="labVerdictText" class="lab-verdict-text">Перетягни точку на полі та запусти розрахунок.</p>
+              </div>
+            </div>
+          </aside>
         </div>
       </div>
     </section>
@@ -944,8 +1115,9 @@
     </div>
   </footer>
 
-  <script src="data.js?v=20261114_sae6" defer></script>
-  <script src="game.js?v=20261114_sae6" defer></script>
-  <script src="app.js?v=20261114_sae6" defer></script>
+  <script src="data.js?v=20261114_sae7" defer></script>
+  <script src="game.js?v=20261114_sae7" defer></script>
+  <script src="lab.js?v=20261114_sae7" defer></script>
+  <script src="app.js?v=20261114_sae7" defer></script>
 </body>
 </html>

@@ -82,7 +82,9 @@ class SoundManager {
 
 class ThemeMusicManager {
   constructor() {
-    this.targetVolume = 0.28;
+    this.baseVolume = 0.28;
+    this.targetVolume = this.baseVolume;
+    this.ducked = false;
     this.fadeDurationMs = 450;
     this.enabled = true;
     this.userPaused = false;
@@ -96,13 +98,25 @@ class ThemeMusicManager {
       flow: this.createAudio('assets/audio/sae_theme_flow.mp3')
     };
 
-    const unlock = () => {
+    const unlock = (e) => {
+      if (e?.target?.closest?.('#bgmToggleBtn')) return;
       if (this.enabled && !this.userPaused && !this.isPlaying()) {
         this.playCurrent(false);
       }
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
     };
-    window.addEventListener('pointerdown', unlock, { once: true });
-    window.addEventListener('keydown', unlock, { once: true });
+    window.addEventListener('pointerdown', unlock);
+    window.addEventListener('keydown', unlock);
+  }
+
+  setDucking(isDucked) {
+    this.ducked = Boolean(isDucked);
+    this.targetVolume = this.ducked ? 0.05 : this.baseVolume;
+    const active = this.tracks[this.mode];
+    if (active && !active.paused && !this.fadeTimer) {
+      active.volume = this.targetVolume;
+    }
   }
 
   createAudio(src) {
@@ -473,6 +487,16 @@ class SaeCallController {
     this.typeReply(reply, emotion === 'flow' ? 'FLOW VERDICT' : 'MATCH VERDICT');
   }
 
+  cancelPendingDuelLaunch() {
+    if (this.duelLaunchTimer) {
+      clearTimeout(this.duelLaunchTimer);
+      this.duelLaunchTimer = null;
+    }
+    if (this.elLaunchDuelBtn) {
+      this.elLaunchDuelBtn.hidden = true;
+    }
+  }
+
   resetCall(playSound = false) {
     clearTimeout(this.duelLaunchTimer);
     if (this.elLaunchDuelBtn) this.elLaunchDuelBtn.hidden = true;
@@ -518,8 +542,9 @@ class SaeCallController {
 }
 
 class SaeQuizApp {
-  constructor(sfx) {
+  constructor(sfx, callbacks = {}) {
     this.sfx = sfx;
+    this.callbacks = callbacks;
     this.currentIdx = 0;
     this.score = 0;
     this.streak = 0;
@@ -714,6 +739,7 @@ class SaeQuizApp {
         reviewList.appendChild(div);
       });
     }
+    this.callbacks.onFinish?.(this.score, total);
   }
 }
 
@@ -721,8 +747,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const sfx = new SoundManager();
   const bgm = new ThemeMusicManager();
   const ambient = new SaeAmbientFX(document.getElementById('saeAmbientCanvas'));
+  const profileMgr = window.PlaymakerProfileManager ? new window.PlaymakerProfileManager() : null;
+  profileMgr?.renderHud();
+
   let isDuelGameUnlocked = false;
   let arena = null;
+  let currentSectionId = 'heroSection';
 
   const callCtrl = new SaeCallController(sfx, {
     onTriggerEvaluationDuel: () => {
@@ -736,9 +766,26 @@ document.addEventListener('DOMContentLoaded', () => {
     onReturnToCall: (result) => {
       activateSection('callSection');
       callCtrl.reportDuelResult(result);
+    },
+    onDuelComplete: (result) => {
+      profileMgr?.recordDuel(result.playerAcc, result.won);
     }
   });
-  const quizApp = new SaeQuizApp(sfx);
+
+  const quizApp = new SaeQuizApp(sfx, {
+    onFinish: (score, total) => {
+      profileMgr?.recordQuiz(score, total);
+    }
+  });
+
+  const metavisionLab = window.MetavisionPitchLab
+    ? new window.MetavisionPitchLab(document.getElementById('metavisionCanvas'), sfx, {
+      onScenarioSolved: (scenarioId) => {
+        profileMgr?.recordLabSolve(scenarioId);
+        showToast('Тактичний кейс Metavision Lab зараховано!');
+      }
+    })
+    : null;
 
   let toastTimer = null;
   function showToast(msg) {
@@ -797,7 +844,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Multi-Level Scroll Reveal System (analog of RinAmbientFX/refreshScrollReveals)
   document.documentElement.classList.add('js-reveal-ready');
-  const reduceMotionQuery = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
 
   const autoRevealRules = [
     { selector: '#heroSection .hero-pillar-card', anim: 'reveal-scale-up', stagger: 2 },
@@ -808,8 +854,15 @@ document.addEventListener('DOMContentLoaded', () => {
     { selector: '#weaponsSection .weapon-card', anim: 'reveal-scale-up', stagger: 3 },
     { selector: '#weaponsSection #weaponDetailPanel', anim: 'reveal-scale-up', delay: 2 },
     { selector: '#gallerySection .gallery-card', anim: 'reveal-scale-up', stagger: 3 },
-    { selector: '#callSection .call-terminal-shell', anim: 'reveal-scale-up', delay: 1 },
-    { selector: '#gameSection .duel-arena-shell', anim: 'reveal-scale-up', delay: 1 },
+    { selector: '#gallerySection .voice-quote-card', anim: 'reveal-scale-up', stagger: 2 },
+    { selector: '#metavisionSection .lab-briefing-banner', anim: 'reveal-from-left', delay: 1 },
+    { selector: '#metavisionSection .lab-shell', anim: 'reveal-scale-up', delay: 2 },
+    { selector: '#callSection .call-hud-bar', anim: 'reveal-from-left', delay: 1 },
+    { selector: '#callSection .call-main-stage', anim: 'reveal-scale-up', delay: 1 },
+    { selector: '#gameSection .duel-diff-bar', anim: 'reveal-from-left', delay: 1 },
+    { selector: '#gameSection .duel-scoreboard-grid', anim: 'reveal-scale-up', delay: 1 },
+    { selector: '#gameSection .duel-canvas-wrap', anim: 'reveal-scale-up', delay: 2 },
+    { selector: '#gameSection .duel-control-deck', anim: 'reveal-from-right', delay: 2 },
     { selector: '#quizContainerSection .quiz-box', anim: 'reveal-scale-up', delay: 1 },
     { selector: '.site-footer', anim: 'reveal-scale-up', delay: 1 }
   ];
@@ -864,12 +917,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  const navProgressEl = document.getElementById('navScrollProgress');
+  function updateScrollProgress() {
+    if (!navProgressEl) return;
+    const docEl = document.documentElement;
+    const scrollable = Math.max(1, docEl.scrollHeight - (window.innerHeight || docEl.clientHeight || 900));
+    const ratio = Math.max(0, Math.min(1, window.scrollY / scrollable));
+    navProgressEl.style.width = `${(ratio * 100).toFixed(2)}%`;
+  }
+
   let scrollResetTicking = false;
   window.addEventListener('scroll', () => {
     if (scrollResetTicking) return;
     scrollResetTicking = true;
     requestAnimationFrame(() => {
       scrollResetTicking = false;
+      updateScrollProgress();
       const vh = window.innerHeight || document.documentElement.clientHeight || 900;
       const activeSection = document.querySelector('.content-section.active');
       if (!activeSection) return;
@@ -955,9 +1018,22 @@ document.addEventListener('DOMContentLoaded', () => {
       activateSection('callSection');
       return;
     }
+    if (currentSectionId === 'callSection' && targetId !== 'callSection') {
+      callCtrl.cancelPendingDuelLaunch();
+    }
+    if (currentSectionId === 'gameSection' && targetId !== 'gameSection') {
+      arena?.pauseGame?.();
+    }
+    if (currentSectionId === 'metavisionSection' && targetId !== 'metavisionSection') {
+      metavisionLab?.onDeactivate?.();
+    }
+
+    currentSectionId = targetId;
     sections.forEach((sec) => sec.classList.toggle('active', sec.id === targetId));
     navLinks.forEach((btn) => btn.classList.toggle('active', btn.getAttribute('data-target') === targetId));
     window.scrollTo({ top: 0, behavior: 'auto' });
+    updateScrollProgress();
+
     const activeEl = document.getElementById(targetId);
     if (activeEl) {
       applyAutoRevealClasses(document);
@@ -968,6 +1044,7 @@ document.addEventListener('DOMContentLoaded', () => {
       requestAnimationFrame(() => {
         refreshScrollReveals(activeEl || document);
         refreshScrollReveals(document.querySelector('.site-footer'));
+        updateScrollProgress();
       });
     });
     if (targetId === 'dossierSection') {
@@ -975,6 +1052,8 @@ document.addEventListener('DOMContentLoaded', () => {
       animateDossierBars();
     }
     if (targetId === 'callSection') callCtrl.startTimerIfNeeded();
+    if (targetId === 'gameSection') arena?.resumeGame?.();
+    if (targetId === 'metavisionSection') metavisionLab?.onActivate?.();
   }
 
   navLinks.forEach((btn) => {
@@ -1090,6 +1169,261 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Gallery Subtabs & Iconic Voice Lines Player (JP + EN)
+  const galleryFramesView = document.getElementById('galleryFramesView');
+  const voiceArchiveView = document.getElementById('voiceArchiveView');
+  const voiceQuotesGrid = document.getElementById('voiceQuotesGrid');
+  const voiceNowBar = document.getElementById('voiceNowPlayingBar');
+  const voiceNowEq = document.getElementById('voiceNowEq');
+  const voiceNowKicker = document.getElementById('voiceNowKicker');
+  const voiceNowTitle = document.getElementById('voiceNowTitle');
+  const voiceSeekBar = document.getElementById('voiceSeekBar');
+  const voiceTimeReadout = document.getElementById('voiceTimeReadout');
+  const voiceStopBtn = document.getElementById('voiceStopBtn');
+
+  let activeVoiceLang = 'all';
+  let activeVoiceAudio = null;
+  let activeVoiceMeta = null; // { clipId, lang }
+
+  function fmtSec(sec) {
+    if (!Number.isFinite(sec) || sec < 0) return '00:00';
+    const s = Math.floor(sec);
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
+  }
+
+  function syncVoiceButtonsUi() {
+    document.querySelectorAll('.voice-track-btn[data-clip-id]').forEach((btn) => {
+      const cid = btn.getAttribute('data-clip-id');
+      const clang = btn.getAttribute('data-clip-lang');
+      const isThis = Boolean(activeVoiceMeta && activeVoiceMeta.clipId === cid && activeVoiceMeta.lang === clang && activeVoiceAudio && !activeVoiceAudio.paused);
+      btn.classList.toggle('is-playing', isThis);
+      const ic = btn.querySelector('.vt-icon');
+      if (ic) ic.textContent = isThis ? '❚❚' : '▶';
+    });
+    const modalMoment = SAE_GALLERY_MOMENTS[activeMomentIdx];
+    const modalClip = modalMoment ? (typeof SAE_VOICE_CLIPS !== 'undefined' ? SAE_VOICE_CLIPS.find((c) => c.linkedMomentId === modalMoment.id) : null) : null;
+    const modalJp = document.getElementById('modalPlayJpBtn');
+    const modalEn = document.getElementById('modalPlayEnBtn');
+    if (modalJp && modalClip) {
+      const onJp = Boolean(activeVoiceMeta?.clipId === modalClip.id && activeVoiceMeta?.lang === 'jp' && activeVoiceAudio && !activeVoiceAudio.paused);
+      modalJp.classList.toggle('is-playing', onJp);
+      modalJp.textContent = onJp ? '❚❚ JP · ПАУЗА' : '▶ 🇯🇵 JP · SAKURAI';
+    }
+    if (modalEn && modalClip) {
+      const onEn = Boolean(activeVoiceMeta?.clipId === modalClip.id && activeVoiceMeta?.lang === 'en' && activeVoiceAudio && !activeVoiceAudio.paused);
+      modalEn.classList.toggle('is-playing', onEn);
+      modalEn.textContent = onEn ? '❚❚ EN · ПАУЗА' : '▶ 🇺🇸 EN · SAAB';
+    }
+  }
+
+  function stopVoiceClip() {
+    if (activeVoiceAudio) {
+      activeVoiceAudio.pause();
+      activeVoiceAudio.currentTime = 0;
+    }
+    activeVoiceMeta = null;
+    bgm.setDucking(false);
+    voiceNowBar?.classList.remove('is-playing');
+    voiceNowEq?.classList.remove('is-playing');
+    if (voiceNowKicker) voiceNowKicker.textContent = 'АУДІОАРХІВ ГОТОВИЙ // ОБЕРИ РЕПЛІКУ';
+    if (voiceNowTitle) voiceNowTitle.textContent = 'Натисни ▶ на будь-якій сцені, щоб увімкнути оригінал';
+    if (voiceSeekBar) { voiceSeekBar.value = '0'; voiceSeekBar.disabled = true; }
+    if (voiceTimeReadout) voiceTimeReadout.textContent = '00:00 / 00:00';
+    if (voiceStopBtn) voiceStopBtn.disabled = true;
+    syncVoiceButtonsUi();
+  }
+
+  function playVoiceClip(clipId, lang = 'jp') {
+    const list = typeof SAE_VOICE_CLIPS !== 'undefined' ? SAE_VOICE_CLIPS : [];
+    const clip = list.find((c) => c.id === clipId);
+    if (!clip || !clip[lang]) return;
+
+    // Toggle pause/resume if clicking the exact active track
+    if (activeVoiceAudio && activeVoiceMeta?.clipId === clipId && activeVoiceMeta?.lang === lang) {
+      if (activeVoiceAudio.paused) {
+        activeVoiceAudio.play().catch(() => {});
+        bgm.setDucking(true);
+        voiceNowBar?.classList.add('is-playing');
+        voiceNowEq?.classList.add('is-playing');
+      } else {
+        activeVoiceAudio.pause();
+        bgm.setDucking(false);
+        voiceNowBar?.classList.remove('is-playing');
+        voiceNowEq?.classList.remove('is-playing');
+      }
+      syncVoiceButtonsUi();
+      return;
+    }
+
+    if (activeVoiceAudio) {
+      activeVoiceAudio.pause();
+      activeVoiceAudio.src = '';
+    }
+
+    const track = clip[lang];
+    const audio = new Audio(track.src);
+    audio.preload = 'metadata';
+    audio.volume = 0.92;
+    activeVoiceAudio = audio;
+    activeVoiceMeta = { clipId, lang };
+
+    bgm.setDucking(true);
+    profileMgr?.recordVoice(clipId);
+    voiceNowBar?.classList.add('is-playing');
+    voiceNowEq?.classList.add('is-playing');
+    if (voiceNowKicker) {
+      voiceNowKicker.textContent = `${clip.epTag} · ${lang === 'jp' ? '🇯🇵 JAPANESE DUB' : '🇺🇸 ENGLISH DUB'} (${track.actor})`;
+    }
+    if (voiceNowTitle) voiceNowTitle.textContent = clip.titleUk;
+    if (voiceSeekBar) { voiceSeekBar.disabled = false; voiceSeekBar.value = '0'; }
+    if (voiceStopBtn) voiceStopBtn.disabled = false;
+    if (voiceTimeReadout) voiceTimeReadout.textContent = `00:00 / ${fmtSec(track.durationSec)}`;
+
+    audio.addEventListener('timeupdate', () => {
+      if (activeVoiceAudio !== audio) return;
+      const dur = Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : (track.durationSec || 1);
+      const pct = Math.max(0, Math.min(100, (audio.currentTime / dur) * 100));
+      if (voiceSeekBar) voiceSeekBar.value = pct.toFixed(1);
+      if (voiceTimeReadout) voiceTimeReadout.textContent = `${fmtSec(audio.currentTime)} / ${fmtSec(dur)}`;
+    });
+
+    audio.addEventListener('ended', () => {
+      if (activeVoiceAudio === audio) stopVoiceClip();
+    });
+
+    audio.play().then(() => {
+      syncVoiceButtonsUi();
+    }).catch(() => {
+      stopVoiceClip();
+    });
+    syncVoiceButtonsUi();
+  }
+
+  voiceSeekBar?.addEventListener('input', () => {
+    if (!activeVoiceAudio || !Number.isFinite(activeVoiceAudio.duration) || activeVoiceAudio.duration <= 0) return;
+    const pct = Math.max(0, Math.min(100, parseFloat(voiceSeekBar.value) || 0));
+    activeVoiceAudio.currentTime = (pct / 100) * activeVoiceAudio.duration;
+  });
+
+  voiceStopBtn?.addEventListener('click', () => {
+    sfx.playClick();
+    stopVoiceClip();
+  });
+
+  function renderVoiceArchive(langFilter = 'all') {
+    if (!voiceQuotesGrid || typeof SAE_VOICE_CLIPS === 'undefined') return;
+    activeVoiceLang = langFilter;
+    voiceQuotesGrid.textContent = '';
+
+    SAE_VOICE_CLIPS.forEach((clip, idx) => {
+      const card = document.createElement('article');
+      card.className = `voice-quote-card reveal-on-scroll reveal-scale-up reveal-delay-${(idx % 3) + 1}`;
+      const showJp = langFilter === 'all' || langFilter === 'jp';
+      const showEn = langFilter === 'all' || langFilter === 'en';
+      const momentIdx = SAE_GALLERY_MOMENTS.findIndex((gm) => gm.id === clip.linkedMomentId);
+
+      const jpBlock = showJp ? `
+        <div class="voice-lang-block is-jp">
+          <div class="voice-lang-head">
+            <span class="v-lang-pill">🇯🇵 JP · ${escapeHtml(clip.jp.actor)}</span>
+            <span class="v-dur-tag">${fmtSec(clip.jp.durationSec)}</span>
+          </div>
+          <p class="v-script-native">${escapeHtml(clip.jp.script)}</p>
+          <p class="v-script-romaji">${escapeHtml(clip.jp.romaji)}</p>
+          <button type="button" class="voice-track-btn" data-clip-id="${escapeHtml(clip.id)}" data-clip-lang="jp">
+            <span class="vt-icon">▶</span>
+            <span>ПРОСЛУХАТИ ЯПОНСЬКОЮ</span>
+          </button>
+        </div>` : '';
+
+      const enBlock = showEn ? `
+        <div class="voice-lang-block is-en">
+          <div class="voice-lang-head">
+            <span class="v-lang-pill is-en-pill">🇺🇸 EN · ${escapeHtml(clip.en.actor)}</span>
+            <span class="v-dur-tag">${fmtSec(clip.en.durationSec)}</span>
+          </div>
+          <p class="v-script-en">${escapeHtml(clip.en.script)}</p>
+          <button type="button" class="voice-track-btn is-en-btn" data-clip-id="${escapeHtml(clip.id)}" data-clip-lang="en">
+            <span class="vt-icon">▶</span>
+            <span>ПРОСЛУХАТИ АНГЛІЙСЬКОЮ</span>
+          </button>
+        </div>` : '';
+
+      card.innerHTML = `
+        <div class="voice-card-header">
+          <div class="voice-thumb-box">
+            <img src="${escapeHtml(clip.posterImg)}" alt="${escapeHtml(clip.titleUk)}" class="voice-thumb-img" loading="lazy" decoding="async">
+          </div>
+          <div class="voice-head-info">
+            <div class="voice-badges-row">
+              <span class="v-ep-badge">${escapeHtml(clip.epTag)}</span>
+              <span class="v-canon-tag">${escapeHtml(clip.canon)}</span>
+            </div>
+            <h3 class="voice-card-title">${escapeHtml(clip.titleUk)}</h3>
+            <p class="voice-card-context">${escapeHtml(clip.contextUk)}</p>
+          </div>
+        </div>
+        <blockquote class="voice-uk-quote">${escapeHtml(clip.translationUk)}</blockquote>
+        <div class="voice-tracks-stack${langFilter === 'all' ? ' is-dual' : ''}">${jpBlock}${enBlock}</div>
+        ${momentIdx >= 0 ? `<div class="voice-card-footer"><button type="button" class="voice-moment-jump-btn" data-open-moment="${momentIdx}">🖼️ ВІДКРИТИ РОЗБІР КАДРУ В ГАЛЕРЕЇ</button></div>` : ''}
+      `;
+      voiceQuotesGrid.appendChild(card);
+    });
+
+    syncVoiceButtonsUi();
+    requestAnimationFrame(() => requestAnimationFrame(() => refreshScrollReveals(voiceQuotesGrid)));
+  }
+
+  voiceQuotesGrid?.addEventListener('click', (e) => {
+    const playBtn = e.target.closest('.voice-track-btn[data-clip-id]');
+    if (playBtn) {
+      playVoiceClip(playBtn.getAttribute('data-clip-id'), playBtn.getAttribute('data-clip-lang') || 'jp');
+      return;
+    }
+    const jumpBtn = e.target.closest('[data-open-moment]');
+    if (jumpBtn) {
+      const mIdx = parseInt(jumpBtn.getAttribute('data-open-moment') || '0', 10);
+      if (!Number.isNaN(mIdx)) openMomentModal(mIdx);
+    }
+  });
+
+  function switchGallerySubtab(subtab = 'frames') {
+    const isVoices = subtab === 'voices';
+    document.querySelectorAll('.g-subtab-btn').forEach((b) => {
+      const match = b.getAttribute('data-gsubtab') === subtab;
+      b.classList.toggle('active', match);
+      b.setAttribute('aria-selected', match ? 'true' : 'false');
+    });
+    if (galleryFramesView) galleryFramesView.hidden = isVoices;
+    if (voiceArchiveView) voiceArchiveView.hidden = !isVoices;
+    if (isVoices) {
+      if (voiceQuotesGrid && !voiceQuotesGrid.children.length) renderVoiceArchive(activeVoiceLang);
+      requestAnimationFrame(() => requestAnimationFrame(() => refreshScrollReveals(voiceArchiveView)));
+    } else {
+      requestAnimationFrame(() => requestAnimationFrame(() => refreshScrollReveals(galleryFramesView)));
+    }
+  }
+
+  document.querySelectorAll('.g-subtab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      sfx.playClick();
+      switchGallerySubtab(btn.getAttribute('data-gsubtab') || 'frames');
+    });
+  });
+
+  document.querySelectorAll('.v-lang-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      sfx.playClick();
+      document.querySelectorAll('.v-lang-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderVoiceArchive(btn.getAttribute('data-vlang') || 'all');
+    });
+  });
+
+  let lastFocusedModalTrigger = null;
+
   function renderMomentModal(idx) {
     activeMomentIdx = (idx + SAE_GALLERY_MOMENTS.length) % SAE_GALLERY_MOMENTS.length;
     const m = SAE_GALLERY_MOMENTS[activeMomentIdx];
@@ -1113,15 +1447,42 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('modalTacticalImpact').textContent = m.tacticalImpact;
     document.getElementById('modalChipEgo').textContent = m.chipEgo;
     document.getElementById('modalChipRival').textContent = m.chipRival;
+
+    const modalVoiceStrip = document.getElementById('modalVoiceStrip');
+    const matchedClip = typeof SAE_VOICE_CLIPS !== 'undefined' ? SAE_VOICE_CLIPS.find((c) => c.linkedMomentId === m.id) : null;
+    if (modalVoiceStrip) {
+      modalVoiceStrip.hidden = !matchedClip;
+      if (matchedClip) {
+        modalVoiceStrip.setAttribute('data-clip-id', matchedClip.id);
+      }
+    }
+    syncVoiceButtonsUi();
   }
+
+  document.getElementById('modalPlayJpBtn')?.addEventListener('click', () => {
+    const cid = document.getElementById('modalVoiceStrip')?.getAttribute('data-clip-id');
+    if (cid) playVoiceClip(cid, 'jp');
+  });
+  document.getElementById('modalPlayEnBtn')?.addEventListener('click', () => {
+    const cid = document.getElementById('modalVoiceStrip')?.getAttribute('data-clip-id');
+    if (cid) playVoiceClip(cid, 'en');
+  });
+  document.getElementById('modalOpenVoicesTabBtn')?.addEventListener('click', () => {
+    closeMomentModal();
+    activateSection('gallerySection');
+    switchGallerySubtab('voices');
+  });
 
   function openMomentModal(idx) {
     if (!galleryModal) return;
+    lastFocusedModalTrigger = document.activeElement;
     sfx.playClick();
     renderMomentModal(idx);
     galleryModal.hidden = false;
     galleryModal.setAttribute('aria-hidden', 'false');
     galleryModal.classList.add('is-open');
+    document.body.classList.add('modal-open');
+    document.getElementById('closeModalBtn')?.focus();
   }
 
   function closeMomentModal() {
@@ -1129,6 +1490,11 @@ document.addEventListener('DOMContentLoaded', () => {
     galleryModal.classList.remove('is-open');
     galleryModal.setAttribute('aria-hidden', 'true');
     galleryModal.hidden = true;
+    document.body.classList.remove('modal-open');
+    if (lastFocusedModalTrigger && typeof lastFocusedModalTrigger.focus === 'function') {
+      lastFocusedModalTrigger.focus();
+      lastFocusedModalTrigger = null;
+    }
   }
 
   document.getElementById('closeModalBtn')?.addEventListener('click', closeMomentModal);
@@ -1140,6 +1506,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Escape') {
       closeMomentModal();
       callCtrl.closeHistory();
+      return;
+    }
+    if (galleryModal && galleryModal.classList.contains('is-open')) {
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        renderMomentModal(activeMomentIdx - 1);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        renderMomentModal(activeMomentIdx + 1);
+      }
     }
   });
 
@@ -1160,7 +1536,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const statsHtml = d.stats.map((s) => `
       <div class="stat-bar-group">
         <div class="stat-bar-header"><span>${escapeHtml(s.name)}</span><span class="stat-bar-val">${escapeHtml(s.val)}</span></div>
-        <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${s.fill}%"></div></div>
+        <div class="stat-bar-track"><div class="stat-bar-fill" data-fill="${s.fill}" style="width:0%"></div></div>
       </div>
     `).join('');
 
@@ -1180,6 +1556,7 @@ document.addEventListener('DOMContentLoaded', () => {
     `).join('');
 
     weaponDetailPanel.classList.toggle('flow-theme', id === 'flow');
+    weaponDetailPanel.classList.add('is-visible');
     weaponDetailPanel.style.animation = 'none';
     void weaponDetailPanel.offsetWidth;
     weaponDetailPanel.style.animation = 'weaponDetailReveal 0.48s cubic-bezier(0.16, 1, 0.3, 1) both';
@@ -1199,6 +1576,11 @@ document.addEventListener('DOMContentLoaded', () => {
       <h4 class="weapon-moments-title">КАНОНІЧНІ КАДРИ ЗАСТОСУВАННЯ</h4>
       <div class="weapon-moments-grid">${momentsHtml}</div>
     `;
+    requestAnimationFrame(() => {
+      weaponDetailPanel.querySelectorAll('.stat-bar-fill[data-fill]').forEach((bar) => {
+        bar.style.width = `${bar.getAttribute('data-fill')}%`;
+      });
+    });
   }
 
   weaponDetailPanel?.addEventListener('click', (e) => {

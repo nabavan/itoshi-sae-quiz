@@ -526,10 +526,36 @@ class SaeRinAdofaiDuel {
       const isReverse = prevDir && (DIR_META[prevDir].dx === -vec.dx && DIR_META[prevDir].dy === -vec.dy);
 
       if (occupied.has(`${nx},${ny}`) || isReverse || ny > 3 || ny < -3) {
-        chosen = 'D';
-        vec = DIR_META.D;
-        nx = gx + vec.dx;
-        ny = gy + vec.dy;
+        const candidates = [dirList[i], 'D', 'W', 'S', 'A'];
+        let picked = null;
+        for (const cand of candidates) {
+          const v = DIR_META[cand];
+          const tx = gx + v.dx;
+          const ty = gy + v.dy;
+          const rev = prevDir && (DIR_META[prevDir].dx === -v.dx && DIR_META[prevDir].dy === -v.dy);
+          if (!occupied.has(`${tx},${ty}`) && !rev && ty <= 3 && ty >= -3) {
+            picked = cand;
+            break;
+          }
+        }
+        if (!picked) {
+          for (const cand of candidates) {
+            const v = DIR_META[cand];
+            const tx = gx + v.dx;
+            const ty = gy + v.dy;
+            const rev = prevDir && (DIR_META[prevDir].dx === -v.dx && DIR_META[prevDir].dy === -v.dy);
+            if (!occupied.has(`${tx},${ty}`) && !rev) {
+              picked = cand;
+              break;
+            }
+          }
+        }
+        if (picked) {
+          chosen = picked;
+          vec = DIR_META[chosen];
+          nx = gx + vec.dx;
+          ny = gy + vec.dy;
+        }
       }
 
       verifiedDirs.push(chosen);
@@ -974,6 +1000,14 @@ class SaeRinAdofaiDuel {
 
     if (this.dom.verdictOverlay) this.dom.verdictOverlay.hidden = false;
     this.syncHud();
+    this.callbacks.onDuelComplete?.({
+      completed: true,
+      playerAcc: pAcc,
+      botAcc: bAcc,
+      won,
+      tie,
+      difficultyName: this.difficulty?.name || 'U-20'
+    });
   }
 
   update(now, dt) {
@@ -1081,11 +1115,28 @@ class SaeRinAdofaiDuel {
     }
 
     const radPerMs = Math.PI / this.chart.beatMs;
-    const minDelta = -Math.max(Math.abs(step.sweep) * 1.18, Math.PI * 1.15);
+    const minDelta = cursor === 0
+      ? -Math.max(Math.abs(step.sweep) * 1.18, this.chart.countInMs * radPerMs)
+      : -Math.max(Math.abs(step.sweep) * 1.18, Math.PI * 1.15);
     const maxDelta = Math.PI * 0.45;
     const rawDelta = (elapsedMs - step.targetMs) * radPerMs;
     const clampedDelta = Math.max(minDelta, Math.min(maxDelta, rawDelta));
     return step.outAngle + step.cw * clampedDelta;
+  }
+
+  pauseGame() {
+    if (this.state !== 'countdown' && this.state !== 'playing') return;
+    if (this.pausedAtPerfMs === null) {
+      this.pausedAtPerfMs = performance.now();
+    }
+  }
+
+  resumeGame() {
+    if (this.state !== 'countdown' && this.state !== 'playing') return;
+    if (this.pausedAtPerfMs !== null) {
+      this.startPerfMs += (performance.now() - this.pausedAtPerfMs);
+      this.pausedAtPerfMs = null;
+    }
   }
 
   drawLane(opts) {
@@ -1191,7 +1242,7 @@ class SaeRinAdofaiDuel {
 
       if (i > cursor && i <= cursor + 10 && stepForTile) {
         ctx.fillStyle = isNextTarget ? '#ffffff' : 'rgba(241, 245, 249, 0.78)';
-        ctx.font = isNextTarget ? '900 19px "Orbitron", sans-serif' : '700 15px "Orbitron", sans-serif';
+        ctx.font = isNextTarget ? '900 19px "Unbounded", "Exo 2", sans-serif' : '700 15px "Unbounded", "Exo 2", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(stepForTile.dir, 0, 1);
@@ -1234,7 +1285,7 @@ class SaeRinAdofaiDuel {
     ctx.setLineDash([]);
 
     // Silky motion trail arc behind the orbiting sphere
-    if (this.state === 'playing' || this.state === 'countdown') {
+    if ((this.state === 'playing' || this.state === 'countdown') && cursor < this.chart.steps.length) {
       const trailSpan = 0.92;
       const segs = 10;
       for (let s = 0; s < segs; s++) {
@@ -1428,7 +1479,7 @@ class SaeRinAdofaiDuel {
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      ctx.font = '900 34px "Orbitron", sans-serif';
+      ctx.font = '900 34px "Unbounded", "Exo 2", sans-serif';
       ctx.fillStyle = beatProgress >= 3 ? '#00ffc8' : '#eab308';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';

@@ -207,7 +207,7 @@ const SAE_GALLERY_MOMENTS = [
     canon: 'АНІМЕ · СЕЗОН 2',
     egoBadge: 'РУБІНОВИЙ ТРАНС',
     title: 'Увімкнення математичної аури Flow на полі',
-    quote: '«Якщо це ваш межа — тоді я прискорю темп до рівня світу.»',
+    quote: '«Якщо це ваша межа — тоді я прискорю темп до рівня світу.»',
     quoteCtx: 'Перехід Сае на підвищені оберти в кінцівці матчу',
     narrative: 'Крізь стадіонний шум Сае оточує вихор яскравої рубіново-пурпурної енергії та геометричних ліній — візуалізація стану Flow, у якому кожен крок розрахований як формула.',
     tacticalImpact: 'Швидкість ухвалення рішень зростає вдвічі, змушуючи Blue Lock 11 перебудовуватися всією командою.',
@@ -586,28 +586,28 @@ const SAE_QUIZ_DATA = [
   {
     block: 'БЛОК 1 // БІОГРАФІЯ',
     question: 'Який зріст має Ітоші Сае згідно з офіційним профілем?',
-    options: ['176 см', '180 см', '184 см', '186 см'],
-    correctIndex: 1,
+    options: ['176 см', '184 см', '180 см', '186 см'],
+    correctIndex: 2,
     explain: 'Зріст Ітоші Сае становить рівно 180 см (186 см — зріст молодшого брата Ріна).'
   },
   {
     block: 'БЛОК 1 // БІОГРАФІЯ',
     question: 'Коли святкує день народження Ітоші Сае?',
-    options: ['9 вересня', '10 жовтня', '1 квітня', '25 листопада'],
-    correctIndex: 1,
+    options: ['9 вересня', '1 квітня', '25 листопада', '10 жовтня'],
+    correctIndex: 3,
     explain: 'Сае народився 10 жовтня (знак Терези). Число 10 символічно збігається з його ігровим номером.'
   },
   {
     block: 'БЛОК 1 // БІОГРАФІЯ',
     question: 'Який напій улюблений у Сае за книгою Egoist Bible?',
-    options: ['Матча лате', 'Чай із солоних водоростей (кобуча)', 'Спортивний ізотонік', 'Чорна кава без цукру'],
-    correctIndex: 1,
+    options: ['Комбу-чай із водоростей (кобуча)', 'Зелений матча-лате з вершками', 'Спортивний ізотонік із лимоном', 'Міцна чорна кава без цукру'],
+    correctIndex: 0,
     explain: 'В Egoist Bible вказано, що Сае обожнює солоний комбу-чай (кобуча), бо він «повертає його до нуля».'
   },
   {
     block: 'БЛОК 1 // БІОГРАФІЯ',
     question: 'Яку страву Сае свідомо уникає, попри визнання її смаку?',
-    options: ['Рамен із жирним бульоном', 'Картоплю фрі', 'Шоколадний мус', 'Гострий карі'],
+    options: ['Рамен із густим м’ясним бульоном', 'Смажена картопля фрі', 'Темний шоколадний мус', 'Гострий японський рис із карі'],
     correctIndex: 1,
     explain: 'Сае не їсть картоплю фрі — визнає, що вона смачна, але вважає її надзвичайно шкідливою для організму спортсмена.'
   },
@@ -616,36 +616,36 @@ const SAE_QUIZ_DATA = [
   {
     block: 'БЛОК 2 // ЗБРОЯ & СТИЛЬ',
     question: 'На чому будується фірмовий контр-дриблінг («пасивне руйнування») Сае?',
-    options: ['На хаотичних фінтах на випередження', 'На реакції на зміщення балансу захисника', 'На прокиданні м’яча виключно на ривку', 'На силовому відтісненні спиною'],
-    correctIndex: 1,
+    options: ['На хаотичних фінтах на випередження', 'На прокиданні м’яча вздовж бровки', 'На силовому відтісненні спиною', 'На реакції на зміщення балансу суперника'],
+    correctIndex: 3,
     explain: 'Сае чекає мікровідхилення центру ваги опонента і миттєво карає його контратакувальним рухом в один дотик.'
   },
   {
     block: 'БЛОК 2 // ЗБРОЯ & СТИЛЬ',
     question: 'Яка робоча нога є основною для більшості фірмових ударів і прострілів Сае?',
-    options: ['Права', 'Ліва', 'Лише гра головою', 'Зовнішній підйом правої'],
-    correctIndex: 1,
+    options: ['Ліва робоча нога', 'Права робоча нога', 'Переважно удар головою', 'Зовнішній підйом правої'],
+    correctIndex: 0,
     explain: 'Сае — шульга; саме лівою ногою він виконує фірмову закрутку з нульового кута й розрізні паси.'
   },
   {
     block: 'БЛОК 2 // ЗБРОЯ & СТИЛЬ',
     question: 'Які візуальні елементи оточують Сае під час активації стану Flow?',
-    options: ['Чорні щупальця й очі монстра', 'Математичні числа й рівняння', 'Вогняні крила птаха', 'Блискавки золотого кольору'],
-    correctIndex: 1,
+    options: ['Чорні щупальця й очі монстра', 'Вогняні крила атакувального птаха', 'Математичні числа й рівняння', 'Блискавки золотого кольору'],
+    correctIndex: 2,
     explain: 'Стан Flow Сае «Прекрасне руйнування» візуалізується як каскад цифр і геометричних розрахунків навколо його тіла.'
   },
   {
     block: 'БЛОК 2 // ЗБРОЯ & СТИЛЬ',
     question: 'Як сам Сае називає найвищу естетику своєї гри у другому таймі проти Blue Lock 11?',
-    options: ['Потворне знищення', 'Прекрасне руйнування', 'Мета-інстинкт', 'Тотальне заперечення'],
+    options: ['Потворне знищення', 'Прекрасне руйнування', 'Мета-інстинкт поля', 'Тотальне заперечення'],
     correctIndex: 1,
     explain: 'У розділі 140 Сае формулює своє кредо: футбол найвищого рівня — це «акт прекрасного руйнування».'
   },
   {
     block: 'БЛОК 2 // ЗБРОЯ & СТИЛЬ',
     question: 'Проти кого з гравців Blue Lock Сае використав подвійне еластіко, перестрибнувши підкат Хіорі у Flow?',
-    options: ['Проти Ріна та Хіорі', 'Проти Бачіри та Ігагурі', 'Проти Райчі та Токіміцу', 'Проти Кунігамі та Ґаґамару'],
-    correctIndex: 0,
+    options: ['Проти Бачіри та Ігагурі', 'Проти Райчі та Токіміцу', 'Проти Кунігамі та Ґаґамару', 'Проти Ріна та Хіорі'],
+    correctIndex: 3,
     explain: 'Еластіко прорізало опіку Ріна в центрі, а у Flow в 140-му розділі Сае граційно перестрибнув підкат Хіорі.'
   },
 
@@ -653,36 +653,36 @@ const SAE_QUIZ_DATA = [
   {
     block: 'БЛОК 3 // RE AL & U-20',
     question: 'До молодіжної академії якого іспанського клубу вступив Ітоші Сае?',
-    options: ['FC Barcha', 'Re Al', 'Manshine Spain', 'Atlético Royale'],
-    correctIndex: 1,
+    options: ['FC Barcha', 'Manshine Spain', 'Re Al', 'Atlético Royale'],
+    correctIndex: 2,
     explain: 'Сае виступає за молодіжну команду королівського іспанського клубу Re Al (аналог Real Madrid у Blue Lock).'
   },
   {
     block: 'БЛОК 3 // RE AL & U-20',
     question: 'До якої елітної символічної групи молодих гравців належить Сае?',
-    options: ['World Five Champions', 'New Generation World XI', 'Master Strikers Guild', 'European Golden Seven'],
-    correctIndex: 1,
+    options: ['New Generation World XI', 'World Five Champions', 'Master Strikers Guild', 'European Golden Seven'],
+    correctIndex: 0,
     explain: 'Ітоші Сае — офіційний представник New Generation World XI на позиції атакувального півзахисника.'
   },
   {
     block: 'БЛОК 3 // RE AL & U-20',
     question: 'За якої умови Сае погодився зіграти за Японію U-20 проти Blue Lock 11?',
-    options: ['Отримати капітанську пов’язку замість Айку', 'Самому обрати нападника з проєкту Blue Lock', 'Змінити головного тренера збірної', 'Гарантувати безкоштовний виліт до Бразилії'],
-    correctIndex: 1,
+    options: ['Отримати капітанську пов’язку замість Айку', 'Змінити головного тренера збірної Японії', 'Гарантувати негайний виліт до Мадрида', 'Самому обрати форварда із проєкту Blue Lock'],
+    correctIndex: 3,
     explain: 'Сае поставив єдину умову: йому дозволяють забрати до складу одного страйкера з Blue Lock — він обрав Шідо Рюсея.'
   },
   {
     block: 'БЛОК 3 // RE AL & U-20',
     question: 'Як Сае забив перший гол у матчі Японія U-20 — Blue Lock 11?',
-    options: ['Із пенальті в лівий кут', 'З нульового кута біля лицьової лінії', 'Ударом головою після навісу Сендо', 'Прямим штрафним з центру поля'],
+    options: ['Із пенальті в лівий нижній кут', 'З нульового кута біля лицьової лінії', 'Ударом головою після навісу Сендо', 'Прямим штрафним ударом із центру'],
     correctIndex: 1,
     explain: 'У 115-му розділі Сае шокував стадіон ударом лівою ногою буквально з лінії ауту, перекинувши Ґаґамару.'
   },
   {
     block: 'БЛОК 3 // RE AL & U-20',
     question: 'Що трапилося в перерві матчу U-20, коли Сае вже збирався піти зі стадіону?',
-    options: ['Він отримав червону картку за суперечку', 'Айку вмовив його залишитися і випустити Шідо', 'Рін попросив у нього перемир’я', 'Его Дзінпачі заборонив заміни'],
-    correctIndex: 1,
+    options: ['Він отримав червону картку за суперечку', 'Рін несподівано попросив у нього перемир’я', 'Айку вмовив лишитися й випустити Шідо', 'Его Дзінпачі заборонив робити заміни'],
+    correctIndex: 2,
     explain: 'Незадоволений слабкістю форвардів U-20, Сае зібрав сумку, але Олівер Айку вмовив його лишитися за умови виходу Шідо.'
   },
 
@@ -690,15 +690,15 @@ const SAE_QUIZ_DATA = [
   {
     block: 'БЛОК 4 // ПСИХОЛОГІЯ & СВІТ',
     question: 'Кого Сае назвав гравцем, здатним змінити японський футбол одразу після поразки U-20?',
-    options: ['Ітоші Ріна', 'Ісагі Йоічі', 'Шідо Рюсея', 'Наґі Сейшіро'],
-    correctIndex: 1,
+    options: ['Ітоші Ріна', 'Шідо Рюсея', 'Наґі Сейшіро', 'Ісагі Йоічі'],
+    correctIndex: 3,
     explain: 'Попри конфлікт із Ріном, Сае несподівано визнав вирішальний інтелект Ісагі Йоічі, що приніс Blue Lock перемогу.'
   },
   {
     block: 'БЛОК 4 // ПСИХОЛОГІЯ & СВІТ',
     question: 'Чому Ітоші Сае відмовився від дитячої мрії стати найкращим нападником світу?',
-    options: ['Через важку травму коліна в Мадриді', 'Побачивши в Іспанії вищий рівень світових страйкерів', 'Щоб поступитися позицією своєму братові', 'Через вимогу тренера молодіжки Японії'],
-    correctIndex: 1,
+    options: ['Через вищий рівень світових страйкерів в Іспанії', 'Через важку травму коліна в академії Мадрида', 'Щоб поступитися головною роллю своєму братові', 'Через вимогу наставника молодіжки Японії'],
+    correctIndex: 0,
     explain: 'В Іспанії Сае тверезо оцінив масштаб світових нападників та перепрофілювався в елітного плеймейкера.'
   },
   {
@@ -711,8 +711,8 @@ const SAE_QUIZ_DATA = [
   {
     block: 'БЛОК 4 // ПСИХОЛОГІЯ & СВІТ',
     question: 'Хто з іспанських гравців FC Barcha та збірної Іспанії U-20 фігурує в арці ЧС U-20 як нова загроза рівня Європи?',
-    options: ['Банні Іґлесіас', 'Леонардо Луна', 'Кріс Прінс', 'Донато Лоренцо'],
-    correctIndex: 0,
+    options: ['Леонардо Луна', 'Банні Іґлесіас', 'Кріс Прінс', 'Донато Лоренцо'],
+    correctIndex: 1,
     explain: 'Банні Іґлесіас — іспанський вундеркінд із FC Barcha (№ 11 Іспанії U-20), який втілює гостру конкуренцію іспанської ліги.'
   },
   {
@@ -748,23 +748,14 @@ const SAE_LOCAL_KB = [
     ]
   },
   {
-    id: 'greeting',
-    patterns: [/привіт/i, /вітаю/i, /добр(ий|ого)/i, /салют/i, /йоу/i, /hello/i, /\bhi\b/i],
-    emotion: 'neutral',
-    respectDelta: 1,
+    id: 'evaluate_me',
+    triggersDuel: true,
+    patterns: [/оціни\s*мене/i, /оцінка/i, /дуел/i, /виклик/i, /1\s*на\s*1/i, /1v1/i],
+    emotion: 'focused',
+    respectDelta: 6,
     replies: [
-      'Алло. Якщо витрачаєш мій час на пусті люб’язності — краще одразу клади слухавку. Кажи по суті.',
-      'Слухаю. Маю рівно дві хвилини між розбором матчів Re Al і кавою… точніше, чаєм кобуча. Починай.'
-    ]
-  },
-  {
-    id: 'bye',
-    patterns: [/бувай/i, /до побачення/i, /па-?па/i, /на добраніч/i],
-    emotion: 'neutral',
-    respectDelta: 0,
-    replies: [
-      'Закінчили. Іди тренуй перший дотик замість балачок — може, колись не посоромишся вийти зі мною на один газон.',
-      'До зв’язку. Перевіриш свою цінність на полі, а не в текстовому чаті.'
+      'Хочеш мою оцінку? Замість порожніх розмов виходь у ритм матчу Японія U-20 проти Blue Lock у ролі Ріна. Перевіримо твою точність на W / S / A / D проти мого темпу в реальному часі. Запускаю дуель.',
+      'Слова нічого не важать без контролю. Зараз я оціню твій таймінг і реакцію в синхронній дуелі братів Ітоші — спробуй не відстати від моєї точності.'
     ]
   },
   {
@@ -858,17 +849,6 @@ const SAE_LOCAL_KB = [
     ]
   },
   {
-    id: 'evaluate_me',
-    triggersDuel: true,
-    patterns: [/оціни\s*мене/i, /оцінка/i, /дуел/i, /виклик/i, /1\s*на\s*1/i, /1v1/i],
-    emotion: 'focused',
-    respectDelta: 6,
-    replies: [
-      'Хочеш мою оцінку? Замість порожніх розмов виходь у ритм матчу Японія U-20 проти Blue Lock у ролі Ріна. Перевіримо твою точність на W / S / A / D проти мого темпу в реальному часі. Запускаю дуель.',
-      'Слова нічого не важать без контролю. Зараз я оціню твій таймінг і реакцію в синхронній дуелі братів Ітоші — спробуй не відстати від моєї точності.'
-    ]
-  },
-  {
     id: 'flow_philosophy',
     patterns: [/flow/i, /прекрасн/i, /руйнуван/i, /мет[аи]віж/i, /metavision/i, /нульов/i, /еластік/i],
     emotion: 'flow',
@@ -879,8 +859,18 @@ const SAE_LOCAL_KB = [
     ]
   },
   {
+    id: 'bye',
+    patterns: [/бувай/i, /до побачення/i, /па-?па/i, /на добраніч/i],
+    emotion: 'neutral',
+    respectDelta: 0,
+    replies: [
+      'Закінчили. Іди тренуй перший дотик замість балачок — може, колись не посоромишся вийти зі мною на один газон.',
+      'До зв’язку. Перевіриш свою цінність на полі, а не в текстовому чаті.'
+    ]
+  },
+  {
     id: 'compliment',
-    patterns: [/геній/i, /крут/i, /найкращ/i, /люблю/i, /топ/i, /легенд/i],
+    patterns: [/геній/i, /крут/i, /найкращ/i, /люблю/i, /\bтоп\b/i, /легенд/i],
     emotion: 'smirk',
     respectDelta: 4,
     replies: [
@@ -890,12 +880,293 @@ const SAE_LOCAL_KB = [
   },
   {
     id: 'insult',
-    patterns: [/слабак/i, /дур/i, /переоцін/i, /програв/i, /ненавид/i, /нуль/i],
+    patterns: [/слабак/i, /дур(ень|ний|ак|а)/i, /переоцін/i, /ненавид/i, /(повний|круглий|ти)\s+нуль/i],
     emotion: 'disgust',
     respectDelta: -9,
     replies: [
       'Жалюгідно. Коли закінчуються футбольні аргументи, посередність переходить на порожній галас. З такими навіть на одному полі стояти огидно.',
       'Один пропущений м’яч не робить мене слабким, а от твоє невігластво видно одразу. Спробуй сформулювати думку розумніше, або не пиши взагалі.'
+    ]
+  },
+  {
+    id: 'greeting',
+    patterns: [/привіт/i, /вітаю/i, /добр(ий|ого)/i, /салют/i, /йоу/i, /hello/i, /\bhi\b/i],
+    emotion: 'neutral',
+    respectDelta: 1,
+    replies: [
+      'Алло. Якщо витрачаєш мій час на пусті люб’язності — краще одразу клади слухавку. Кажи по суті.',
+      'Слухаю. Маю рівно дві хвилини між розбором матчів Re Al і кавою… точніше, чаєм кобуча. Починай.'
+    ]
+  }
+];
+
+const SAE_VOICE_CLIPS = [
+  {
+    id: 'v01_country',
+    epTag: 'S1 EP 24 · АЕРОПОРТ',
+    canon: 'ІНТЕРВ’Ю ПІСЛЯ ІСПАНІЇ',
+    titleUk: 'Народжений не в тій країні',
+    linkedMomentId: 'm06_interview',
+    posterImg: 'assets/sae_manga_interview.webp',
+    jp: {
+      actor: 'Takahiro Sakurai',
+      src: 'assets/audio/voices/v01_country_jp.mp3',
+      durationSec: 10.55,
+      script: 'こんな弱小国の代表チームじゃ絶対世界一になれないし、この国には俺のパスを受けられるフォワードがいない。俺は生まれる国を間違えただけです。',
+      romaji: 'Konna jakushō-koku no daihyō chīmu ja zettai sekaiichi ni narenai shi, kono kuni ni wa ore no pasu o ukerareru fowādo ga inai. Ore wa umareru kuni o machigaeta dake desu.'
+    },
+    en: {
+      actor: 'Alejandro Saab',
+      src: 'assets/audio/voices/v01_country_en.mp3',
+      durationSec: 16.25,
+      script: '“Absolutely no interest. Japan’s national team is a joke and will only ever be mediocre at best. My dream is to win the Champions League. It’s a tragedy, but the fact is I was born in the wrong country. There’s not a forward here worthy of my passes.”'
+    },
+    translationUk: '«У збірній такої слабкої країни я ніколи не стану найкращим у світі. У цій країні немає жодного нападника, здатного прийняти мій пас. Я просто народився не в тій країні.»',
+    contextUk: 'Повернувшись із мадридського Re Al, Сае без жалю оцінює рівень японського футболу перед камерами — і саме тут вперше чує про проєкт Blue Lock.'
+  },
+  {
+    id: 'v02_interest',
+    epTag: 'S2 EP 03 · РОЗДЯГАЛЬНЯ U-20',
+    canon: 'УЛЬТИМАТУМ ЗБІРНІЙ U-20',
+    titleUk: 'Ні краплі інтересу до посередностей',
+    linkedMomentId: 'm07_shidou_recruit',
+    posterImg: 'assets/sae_manga_shidou_recruit.webp',
+    jp: {
+      actor: 'Takahiro Sakurai',
+      src: 'assets/audio/voices/v02_interest_jp.mp3',
+      durationSec: 9.55,
+      script: '俺はお前らに1ミリも興味はない。だが、お前らの人生でこんな機会は二度とないだろう。',
+      romaji: 'Ore wa omaera ni ichi-miri mo kyōmi wa nai. Daga, omaera no jinsei de konna kikai wa nidoto nai darō.'
+    },
+    en: {
+      actor: 'Alejandro Saab',
+      src: 'assets/audio/voices/v02_interest_en.mp3',
+      durationSec: 12.50,
+      script: '“I don’t have an iota of interest in any of you. Let’s be clear: you’ll never have another chance like this again. So do your best not to irritate me. That’s all.”'
+    },
+    translationUk: '«Ви не цікавите мене ані на міліметр. Проте іншої такої нагоди у вашому житті більше не буде. Тож намагайтеся не дратувати мене.»',
+    contextUk: 'Перша поява Сае в роздягальні збірної Японії U-20: жодного пієтету до статусів, лише холодний відбір на його умовах.'
+  },
+  {
+    id: 'v03_desire',
+    epTag: 'S2 EP 03 · КОРИДОР U-20',
+    canon: 'ДИСТАНЦІЯ АМБІЦІЙ',
+    titleUk: 'Глибина нашого его — іншого виміру',
+    linkedMomentId: 'm04_spain_return',
+    posterImg: 'assets/sae_manga_spain_return.webp',
+    jp: {
+      actor: 'Takahiro Sakurai',
+      src: 'assets/audio/voices/v03_desire_jp.mp3',
+      durationSec: 3.60,
+      script: '欲の深さが違ぇんだよ。',
+      romaji: 'Yoku no fukasa ga chigeen da yo.'
+    },
+    en: {
+      actor: 'Alejandro Saab',
+      src: 'assets/audio/voices/v03_desire_en.mp3',
+      durationSec: 3.15,
+      script: '“The depth of your desire is nowhere near mine.”'
+    },
+    translationUk: '«Глибина нашого прагнення — це зовсім різні рівні.»',
+    contextUk: 'Коротка, нищівна репліка гравця New Generation World XI у відповідь на зарозумілість тих, хто міряє велич рамками одного чемпіонату.'
+  },
+  {
+    id: 'v04_oneshot',
+    epTag: 'S2 EP 09 · СТАДІОН U-20',
+    canon: 'СТАВКА ПРОТИ РІНА',
+    titleUk: 'Матч в один дотик — усе вирішиться зараз',
+    linkedMomentId: 'm11_elastico_feint',
+    posterImg: 'assets/sae_manga_elastico_feint.webp',
+    jp: {
+      actor: 'Takahiro Sakurai',
+      src: 'assets/audio/voices/v04_oneshot_jp.mp3',
+      durationSec: 9.65,
+      script: '行くぞ、凛。でも俺が勝ったら、俺たちの夢はここで終わりだ。一発勝負だ。',
+      romaji: 'Iku zo, Rin. Demo ore ga kattara, oretachi no yume wa koko de owari da. Ippatsu shōbu da.'
+    },
+    en: {
+      actor: 'Alejandro Saab',
+      src: 'assets/audio/voices/v04_oneshot_en.mp3',
+      durationSec: 5.53,
+      script: '“This is a one-shot match.”'
+    },
+    translationUk: '«Починаймо, Ріне. Якщо переможу я — наша спільна мрія обірветься тут. Усе вирішить один матч.»',
+    contextUk: 'Напередодні відкриття рахунку на стадіоні Сае перетворює дуель братів на фінальний тест без права на другий шанс.'
+  },
+  {
+    id: 'v05_value',
+    epTag: 'S2 EP 05 · СНІГОВА КАМАКУРА',
+    canon: 'БЕЗЦІННА ЖОРСТОКІСТЬ',
+    titleUk: 'У тебе немає жодної цінності',
+    linkedMomentId: 'm05_snow_duel',
+    posterImg: 'assets/sae_manga_snow_duel.webp',
+    jp: {
+      actor: 'Takahiro Sakurai',
+      src: 'assets/audio/voices/v05_value_jp.mp3',
+      durationSec: 12.80,
+      script: '凛。お前は俺のいないこの4年間、ここで何をしていたんだ？…だったらやめろ。お前に価値なんかねぇんだよ。',
+      romaji: 'Rin. Omae wa ore no inai kono yonenkan, koko de nani o shite ita nda?... Dattara yamero. Omae ni kachi nanka nee nda yo.'
+    },
+    en: {
+      actor: 'Alejandro Saab',
+      src: 'assets/audio/voices/v05_value_en.mp3',
+      durationSec: 12.25,
+      script: '“To me, you’re nothing but a nuisance. An annoying little brother following me around. You’re worthless. You have no value. Get lost. I don’t need you. Not on the field or in my life.”'
+    },
+    translationUk: '«Ріне, чим ти займався ці чотири роки без мене? Якщо тримаєшся лише за мене — кидай футбол. Твоя гра не має жодної цінності.»',
+    contextUk: 'Точка розриву після повернення з Мадрида: жорстокий вердикт, який зруйнував старе его Ріна й підштовхнув його в Blue Lock.'
+  },
+  {
+    id: 'v06_levelup',
+    epTag: 'S2 EP 10 · ДРУГИЙ ТАЙМ U-20',
+    canon: 'ПІДВИЩЕННЯ ТЕМПУ FLOW',
+    titleUk: 'Підіймаємо рівень: наступний пейзаж',
+    linkedMomentId: 'm14_flow_aura_anime',
+    posterImg: 'assets/sae_anime_flow_aura.webp',
+    jp: {
+      actor: 'Takahiro Sakurai',
+      src: 'assets/audio/voices/v06_levelup_jp.mp3',
+      durationSec: 10.00,
+      script: 'レベルを上げるぞ。ついて来れるバカだけに、次の景色を見せてやる。',
+      romaji: 'Reberu o ageru zo. Tsuite koreru baka dake ni, tsugi no keshiki o misete yaru.'
+    },
+    en: {
+      actor: 'Alejandro Saab',
+      src: 'assets/audio/voices/v06_levelup_en.mp3',
+      durationSec: 8.42,
+      script: '“…the next level. Only the idiots who can keep up with me will be able to witness what comes next.”'
+    },
+    translationUk: '«Підіймаємо рівень. Лише ті божевільні, хто встигне за моїм темпом, побачать наступну сцену гри.»',
+    contextUk: 'На старті другого тайму Сае прискорює ритм атаки до межі, змушуючи навіть хаос Шідо підкоритися геометрії його пасів.'
+  },
+  {
+    id: 'v07_brother',
+    epTag: 'S2 EP 12 · ФІНАЛЬНИЙ ПРОРИВ',
+    canon: 'СИНДРОМ МОЛОДШОГО БРАТА',
+    titleUk: 'Поки ти мій брат — ти мене не перевершиш',
+    linkedMomentId: 'm16_vs_rin_anime',
+    posterImg: 'assets/sae_anime_vs_rin.webp',
+    jp: {
+      actor: 'Takahiro Sakurai',
+      src: 'assets/audio/voices/v07_brother_jp.mp3',
+      durationSec: 10.80,
+      script: 'そうやってまだ俺の弟でいるうちは……お前は俺を超えられない。',
+      romaji: 'Sō yatte mada ore no otōto de iru uchi wa... omae wa ore o koerarenai.'
+    },
+    en: {
+      actor: 'Alejandro Saab',
+      src: 'assets/audio/voices/v07_brother_en.mp3',
+      durationSec: 11.00,
+      script: '“You do realize, if you keep acting like my little brother... you can’t surpass me. And never will.”'
+    },
+    translationUk: '«Поки ти продовжуєш залишатися всього лише моїм молодшим братом — ти мене не перевершиш.»',
+    contextUk: 'Кульмінаційне зіткнення 1-на-1 у другому таймі: Сае зчитує старі рефлекси Ріна та руйнує його персональну опіку.'
+  }
+];
+
+const SAE_LAB_SCENARIOS = [
+  {
+    id: 'lab01_zero_angle',
+    code: 'CASE 01 // CH. 115',
+    title: 'Гол із нульового кута',
+    mode: 'shot',
+    subtitle: 'Правий край лицьової лінії. Ґаґамару перекрив ближній кут, двоє захисників стережуть простріл.',
+    hint: 'Перетягни точку цілі у дальню верхню дев’ятку (біля 948, 224) або викрути Спін ≈ -0.68…-0.88 з силою ~78–92, щоб м’яч оминув блок захисників і загнувся в сітку.',
+    saePos: { x: 868, y: 452, label: 'SAE №10' },
+    defaultAim: { x: 944, y: 292 },
+    defaultCurve: -0.15,
+    defaultPower: 68,
+    optimalSolution: { aimX: 948, aimY: 224, curve: -0.88, power: 88 },
+    goal: { x: 948, topY: 214, botY: 346 },
+    gk: { x: 932, y: 316, reach: 30, label: 'GK ҐАҐАМАРУ' },
+    runner: null,
+    defenders: [
+      { id: 'd1', x: 892, y: 386, r: 22, label: 'ARGY', visionR: 72 },
+      { id: 'd2', x: 908, y: 344, r: 21, label: 'CHI', visionR: 68 }
+    ]
+  },
+  {
+    id: 'lab02_shidou_future',
+    code: 'CASE 02 // CH. 127',
+    title: 'Пас у «найкраще майбутнє» Шідо',
+    mode: 'pass',
+    subtitle: 'Шідо Рюсей набирає хід у глибину штрафного. Ніко та Ісагі перекривають пряму діагональ.',
+    hint: 'Не пасуй туди, де Шідо зараз! Цілься попереду його ривка (x ≈ 760–830, y ≈ 225–275) із закруткою на обхід блоку Ніко (Спін ≈ -0.62, Сила ~86).',
+    saePos: { x: 258, y: 186, label: 'SAE №10' },
+    defaultAim: { x: 545, y: 148 },
+    defaultCurve: 0.1,
+    defaultPower: 62,
+    optimalSolution: { aimX: 782, aimY: 246, curve: -0.64, power: 86 },
+    goal: { x: 948, topY: 214, botY: 346 },
+    gk: { x: 932, y: 280, reach: 26, label: 'GK' },
+    runner: {
+      startX: 540,
+      startY: 118,
+      vx: 205,
+      vy: 108,
+      catchRadius: 42,
+      label: 'SHIDOU'
+    },
+    defenders: [
+      { id: 'd1', x: 528, y: 206, r: 28, label: 'NIKO', visionR: 78 },
+      { id: 'd2', x: 652, y: 272, r: 26, label: 'ISAGI', visionR: 74 },
+      { id: 'd3', x: 716, y: 156, r: 24, label: 'ARYU', visionR: 66 }
+    ]
+  },
+  {
+    id: 'lab03_passive_break',
+    code: 'CASE 03 // CH. 120',
+    title: 'Розріз подвійного пресингу 1v2',
+    mode: 'pass',
+    subtitle: 'Ісагі, Бачіра та Карасу змикають блок у центрі. Закрути пас у вільний зовнішній коридор на хід Сендо.',
+    hint: 'Веди траєкторію в точку ривка Сендо праворуч (x ≈ 776, y ≈ 284), виставивши праву закрутку (Спін ≈ +0.58) та високу швидкість (Сила ≈ 88), щоб оминути блок трійки.',
+    saePos: { x: 280, y: 280, label: 'SAE №10' },
+    defaultAim: { x: 678, y: 240 },
+    defaultCurve: -0.1,
+    defaultPower: 60,
+    optimalSolution: { aimX: 778, aimY: 284, curve: 0.62, power: 88 },
+    goal: { x: 948, topY: 214, botY: 346 },
+    gk: { x: 932, y: 280, reach: 26, label: 'GK' },
+    runner: {
+      startX: 668,
+      startY: 342,
+      vx: 102,
+      vy: -52,
+      catchRadius: 40,
+      label: 'SENDO'
+    },
+    defenders: [
+      { id: 'd1', x: 472, y: 232, r: 26, label: 'ISAGI', visionR: 76 },
+      { id: 'd2', x: 468, y: 314, r: 24, label: 'BACHIRA', visionR: 74 },
+      { id: 'd3', x: 622, y: 282, r: 26, label: 'KARASU', visionR: 70 }
+    ]
+  },
+  {
+    id: 'lab04_sandbox',
+    code: 'SANDBOX // FREE METAVISION',
+    title: 'Вільна дошка траєкторій',
+    mode: 'sandbox',
+    subtitle: 'Перетягуй захисників (D1–D3) і точку призначення прямо по полю, тестуй кут і закрутку тривели в реальному часі.',
+    hint: 'Вільний режим: пересувай захисників та точку удару, експериментуй із силою та спіном, щоб оцінити чистий коридор і ймовірність проходу (xG%).',
+    saePos: { x: 310, y: 295, label: 'SAE №10' },
+    defaultAim: { x: 860, y: 236 },
+    defaultCurve: -0.58,
+    defaultPower: 84,
+    optimalSolution: { aimX: 948, aimY: 228, curve: -0.78, power: 90 },
+    goal: { x: 948, topY: 214, botY: 346 },
+    gk: { x: 932, y: 298, reach: 26, label: 'GK' },
+    runner: {
+      startX: 680,
+      startY: 165,
+      vx: 155,
+      vy: 66,
+      catchRadius: 42,
+      label: 'STRIKER'
+    },
+    defenders: [
+      { id: 'd1', x: 520, y: 250, r: 26, label: 'DF-1', visionR: 76 },
+      { id: 'd2', x: 660, y: 328, r: 26, label: 'DF-2', visionR: 76 },
+      { id: 'd3', x: 750, y: 228, r: 24, label: 'DF-3', visionR: 70 }
     ]
   }
 ];
